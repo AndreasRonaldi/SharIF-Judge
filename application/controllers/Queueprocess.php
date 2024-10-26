@@ -33,7 +33,6 @@ class Queueprocess extends CI_Controller
 	 */
 	public function run()
 	{
-
 		// Set correct base_url
 		// Because we are in cli mode, base_url is not available, and we get
 		// it from an environment variable that we have set in shj_helper.php
@@ -109,7 +108,7 @@ class Queueprocess extends CI_Controller
 			$output_size_limit = $this->settings_model->get_setting('output_size_limit') * 1024;
 
 			$cmd = "cd $tester_path;\n./tester.sh $problemdir ".escapeshellarg($username).' '.escapeshellarg($main_filename).' '.escapeshellarg($raw_filename)." $file_type $time_limit $time_limit_int $memory_limit $output_size_limit $diff_cmd $diff_arg $op1 $op2 $op3 $op4 $op5 $op6 $op7";
-
+			
 			file_put_contents($userdir.'/log', $cmd);
 
 			///////////////////////////////////////
