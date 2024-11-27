@@ -218,7 +218,7 @@ COMPILE_BEGIN_TIME=$(($(date +%s%N)/1000000));
 if [ "$EXT" = "java" ]; then
 	cp ../java.policy java.policy
 	MAINCLASS="$(grep -e 'public class\|public static void main\>' ${PROBLEMPATH}/${UN}/${FILENAME}.java  | grep -B1 "public static void main" | grep '\<class\>' | sed "s/^.*class \+//;s/ .*$//")"
-	if [ $MAINFILENAME != $MAINCLASS ]; then
+	if [ "$MAINFILENAME" != "$MAINCLASS" ]; then
 		MAINFILENAME=$MAINCLASS
 	fi
 	cp $PROBLEMPATH/$UN/$FILENAME.java $MAINFILENAME.java
@@ -352,6 +352,7 @@ if [ "$EXT" = "c" ] || [ "$EXT" = "cpp" ]; then
 			SANDBOX_ON=false
 		fi
 	fi
+
 	if $C_SHIELD_ON; then
 		shj_log "Enabling Shield For C/C++"
 		# if code contains any 'undef', raise compile error:
@@ -371,6 +372,7 @@ if [ "$EXT" = "c" ] || [ "$EXT" = "cpp" ]; then
 		$COMPILER code.$EXT $C_OPTIONS $C_WARNING_OPTION -o $EXEFILE >/dev/null 2>cerr
 		EXITCODE=$?
 	fi
+
 	COMPILE_END_TIME=$(($(date +%s%N)/1000000));
 	shj_log "Compiled. Exit Code=$EXITCODE  Execution Time: $((COMPILE_END_TIME-COMPILE_BEGIN_TIME)) ms"
 	if [ $EXITCODE -ne 0 ]; then
