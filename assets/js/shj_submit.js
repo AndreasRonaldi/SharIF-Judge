@@ -11,6 +11,9 @@ $(document).ready(function () {
 	editor.setOptions({
 		theme: "ace/theme/monokai",
 		fontSize: "11pt",
+		enableLiveAutocompletion: true,
+		enableBasicAutocompletion: true,
+		enableSnippets: true,
 	});
 
 	function disableEditor(bool) {
@@ -57,6 +60,8 @@ $(document).ready(function () {
 			$(
 				'<option value="' + shj.p[v][i] + '">' + shj.p[v][i] + "</option>"
 			).appendTo("select#languages");
+
+		recordStart();
 	});
 
 	$("select#languages").change(function () {
@@ -82,18 +87,33 @@ $(document).ready(function () {
 
 	$("#editor_save").click(function () {
 		disableEditor(true);
+		let rec = {...recording};
+		rec.reset = "";
+
+		console.log(getCurrentTime());
+
+		let fd = new FormData();
+		fd.append('shj_csrf_token', shj.csrf_token);
+		fd.append('code_editor', editor.getValue());
+		fd.append('problem_id', $("select#problems").val());
+		fd.append('language', $("select#languages").val());
+		fd.append('rec', shj.csrf_token);
+		// fd.append('buffer', blob, 'rec.bin');
+
 		$.ajax({
 			type: "POST",
 			url: shj.site_url + "submit/save",
-			data: {
-				shj_csrf_token: shj.csrf_token,
-				code_editor: editor.getValue(),
-				problem_id: $("select#problems").val(),
-				language: $("select#languages").val(),
-			},
+			data: fd,
+			processData: false,
+			contentType: false,
 			cache: false,
 			success: function (data) {
 				data = JSON.parse(data);
+
+				console.log(JSON.parse(data['test']));
+				console.log(getCurrentTime());
+				// console.log(data['test']);
+
 				$("#ajax_status").html(data.message);
 				disableEditor(false);
 			},
@@ -106,6 +126,8 @@ $(document).ready(function () {
 
 	$("#editor_submit").click(function () {
 		disableEditor(true);
+		let rec = {...recording};
+
 		$.ajax({
 			type: "POST",
 			url: shj.site_url + "submit/save/submit",
@@ -114,6 +136,7 @@ $(document).ready(function () {
 				code_editor: editor.getValue(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
+				rec: JSON.stringify(rec),
 			},
 			cache: false,
 			success: function (data) {
@@ -129,10 +152,14 @@ $(document).ready(function () {
 				disableEditor(false);
 			},
 		});
+
+		recordStop();
 	});
 
 	$("#editor_execute").click(function () {
 		disableEditor(true);
+		let rec = {...recording};
+
 		$.ajax({
 			type: "POST",
 			url: shj.site_url + "submit/save/execute",
@@ -142,6 +169,7 @@ $(document).ready(function () {
 				editor_input: $("textarea#editor_input").val(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
+				rec: JSON.stringify(rec),
 			},
 			cache: false,
 			success: function (data) {
@@ -158,6 +186,12 @@ $(document).ready(function () {
 							success: function (data) {
 								data = JSON.parse(data);
 								$("textarea#editor_output").val(data.content);
+								// ----
+								$("textarea#editor_output").trigger(
+									"output_change",
+									data.content
+								);
+								// ----
 								if (!data.status) {
 									setTimeout(update, 1000);
 								} else {
@@ -188,9 +222,349 @@ $(document).ready(function () {
 	// ############          Recording           ############
 	// ######################################################
 
-	let Range = ace.Range;
+	// Local Variable
+	const Range = ace.Range;
 
-	function getSelection(editor) {
+	let hidden = "hidden";
+	let visibilityChange = "visibilitychange";
+
+	// Saved Event
+	const recording = {
+		events: [],
+		startTime: -1,
+		startValue: "",
+		startSelection: [],
+
+		reset: () => {
+			recording.events = [];
+			recording.startTime = Date.now();
+			recording.startValue = editor.getValue();
+			recording.startSelection = getSelection(editor);
+		},
+	};
+
+	// What's recording does the system will record
+	const include = {
+		editor: true,
+		web: true,
+		pdf: true,
+		input: true,
+		output: true,
+		action: true,
+		others: false, // default value for other recording
+	};
+
+	// ######################################################
+	// ############           Listener            ###########
+	// ######################################################
+
+	const handlers = {
+		// ######### Editor Event #########
+		// Detected Every Command that executed in editor
+		editor_exec: (e) =>
+			recordEvent(e.action, {
+				data: e.lines,
+				start: e.start,
+				end: e.end,
+			}),
+		// Detected on cursor change
+		editor_cursor: () => recordEvent("cursor_selection", getSelection(editor)),
+		// Detected on selection
+		editor_selection: () => recordEvent("sel_selection", getSelection(editor)),
+
+		// ######### Windows Event #########
+		// Detected Leaving Focus in almost all browser (still active page, but on different windows or on iFrame PDF viewer)
+		focus: () => {
+			removeListener.focus();
+			addListener.blur();
+
+			recordEvent("focus");
+		},
+		// Detected on Focus in almost all browser (active page)
+		blur: () => {
+			removeListener.blur();
+			addListener.focus();
+
+			recordEvent("blur");
+		},
+		// Detected Leaving Page in almost all browser (page not visible anymore)
+		visibility: (evt) => {
+			let v = true; // page is visible
+			let h = false; // ppage is hidden
+
+			let evtMap = {
+				focus: v,
+				focusin: v,
+				pageshow: v,
+				blur: h,
+				focusout: h,
+				pagehide: h,
+			};
+
+			let isVisible = true;
+
+			evt = evt || window.event;
+
+			if (evt.type in evtMap) isVisible = evtMap[evt.type];
+			else isVisible = document[hidden] ? h : v;
+
+			if (isVisible) {
+				// detect focus or blur if visible again
+				addListener.focus();
+				addListener.pdf_focus();
+			} else {
+				// no need to detect focus or blur if not visible
+				removeListener.focus();
+				removeListener.blur();
+				removeListener.pdf_focus();
+				removeListener.pdf_blur();
+			}
+
+			// console.log("change visibility:", !document[hidden], getCurrentTime());
+			recordEvent("visibility", isVisible);
+		},
+
+		// ######### PDF Viewer ##########
+		// Detected when user click/focus on the pdf viewer IDE
+		pdf_focus: () => {
+			removeListener.pdf_focus();
+			addListener.pdf_blur();
+
+			recordEvent("pdf_focus");
+		},
+		// Detected when user click outside/blur of the pdf viewer IDE
+		pdf_blur: () => {
+			removeListener.pdf_blur();
+			addListener.pdf_focus();
+
+			recordEvent("pdf_blur");
+		},
+
+		// ######### Input Event #########
+		input_change: (e) => recordEvent("input_change", e.currentTarget.value),
+
+		// ######### Output Event #########
+		output_change: (_, data) => recordEvent("output_change", data),
+
+		// ######### Action Event #########
+		save: () => recordEvent("save"),
+		submit: () => recordEvent("submit"),
+		execute: () => recordEvent("execute"),
+	};
+
+	const addListener = {
+		editor_exec: () => editor.session.on("change", handlers.editor_exec),
+		editor_cursor: () =>
+			editor.session.selection.on("changeCursor", handlers.editor_cursor),
+		editor_selection: () =>
+			editor.session.selection.on("changeSelection", handlers.editor_selection),
+		focus: () => addEvent(window, "focus", handlers.focus),
+		blur: () => addEvent(window, "blur", handlers.blur),
+		visibility: () => addEvent(document, visibilityChange, handlers.visibility),
+		pdf_focus: () =>
+			addEvent(
+				$("#pdf_viewer")[0].contentWindow,
+				"focusin",
+				handlers.pdf_focus
+			),
+		pdf_blur: () =>
+			addEvent(
+				$("#pdf_viewer")[0].contentWindow,
+				"focusout",
+				handlers.pdf_blur
+			),
+		input_change: () => $("#editor_input").on("input", handlers.input_change),
+		output_change: () =>
+			$("textarea#editor_output").on("output_change", handlers.output_change),
+		save: () => $("#editor_save").on("click", handlers.save),
+		submit: () => $("#editor_submit").on("click", handlers.submit),
+		execute: () => $("#editor_execute").on("click", handlers.execute),
+	};
+
+	const removeListener = {
+		editor_exec: () => editor.commands.off("afterExec", handlers.editor_exec),
+		editor_cursor: () =>
+			editor.selection.off("changeCursor", handlers.editor_cursor),
+		editor_selection: () =>
+			editor.selection.off("changeSelection", handlers.editor_selection),
+		focus: () => removeEvent(window, "focus", handlers.focus),
+		blur: () => removeEvent(window, "blur", handlers.blur),
+		visibility: () =>
+			removeEvent(document, visibilityChange, handlers.visibility),
+		pdf_focus: () =>
+			removeEvent(
+				$("#pdf_viewer")[0].contentWindow,
+				"focusin",
+				handlers.pdf_focus
+			),
+		pdf_blur: () =>
+			removeEvent(
+				$("#pdf_viewer")[0].contentWindow,
+				"focusout",
+				handlers.pdf_blur
+			),
+		input_change: () => $("#editor_input").off("input", handlers.input_change),
+		output_change: () =>
+			$("textarea#editor_output").off("output_change", handlers.output_change),
+		save: () => $("#editor_save").off("click", handlers.save),
+		submit: () => $("#editor_submit").off("click", handlers.submit),
+		execute: () => $("#editor_execute").off("click", handlers.execute),
+	};
+
+	// ######################################################
+	// ############           Methods            ############
+	// ######################################################
+
+	const record = {
+		// Code Editor
+		editor: () => {
+			// ####### Editor #######
+			recording.startValue = editor.getValue();
+			recording.startSelection = getSelection(editor);
+
+			// Exec command
+			addListener.editor_exec();
+
+			// For Cursor
+			addListener.editor_cursor();
+			addListener.editor_selection();
+		},
+		// Overall page/tabs
+		web: () => {
+			// ####### Web Page #######
+			// Get from https://stackoverflow.com/questions/1060008/is-there-a-way-to-detect-if-a-browser-window-is-not-currently-active
+
+			// for every type of browser.
+			if (hidden in document) {
+				visibilityChange = "visibilitychange";
+			} else if ((hidden = "mozHidden") in document) {
+				visibilityChange = "mozvisibilitychange";
+			} else if ((hidden = "webkitHidden") in document) {
+				visibilityChange = "webkitvisibilitychange";
+			} else if ((hidden = "msHidden") in document) {
+				visibilityChange = "msvisibilitychange";
+			}
+
+			if (visibilityChange != null) {
+				// addListener.focus();
+				addListener.blur();
+				addListener.visibility();
+			} else if ("onfocusin" in document) {
+				// IE 9 and lower:
+				document.onfocusin = document.onfocusout = handlers.visibility;
+			} else {
+				// All others:
+				window.onpageshow =
+					window.onpagehide =
+					window.onfocus =
+					window.onblur =
+						handlers.visibility;
+			}
+		},
+		// PDF Viewer
+		pdf: () => {
+			let el = document.getElementById("pdf_viewer");
+
+			var observer = new IntersectionObserver(function () {
+				if (el.src != "") {
+					// addListener.pdf_blur();
+					addListener.pdf_focus();
+				}
+			});
+
+			observer.observe(el, { attributes: true, childList: true });
+		},
+		// Input field
+		input: () => {
+			addListener.input_change();
+		},
+		// Output field
+		output: () => {
+			addListener.output_change();
+		},
+		// Action Button
+		action: () => {
+			addListener.save();
+			addListener.submit();
+			addListener.execute();
+		},
+	};
+
+	// Methods to start recording.
+	const recordStart = () => {
+		recording.reset();
+
+		for (let index = 0; index < 400; index++) {			
+			recordEvent("test");
+		}
+
+		Object.keys(record).forEach((evtName) => {
+			const inInclude = evtName in include;
+			if (include[evtName] || (!inInclude && include["others"])) {
+				record[evtName]();
+			}
+		});
+	};
+
+	const recordStop = () => {
+		Object.values(removeListener).forEach((func) => {
+			func();
+		});
+	};
+
+	// ######################################################
+	// ############            Misc             #############
+	// ######################################################
+
+	$("#editor_record").click(() => recordStart());
+	$("#editor_play").click(() => console.log({...recording}));
+	$("#editor_stop").click(() => recordStop());
+
+	// Method to record listener.
+	const recordEvent = (event, args) => {
+		// TODO: Recording
+		let curTime = getCurrentTime();
+
+		recording.events.push({
+			time: curTime,
+			event,
+			args,
+		});
+
+		// console.log(curTime + "ms", event, args);
+	};
+
+	const addEvent = (obj, evType, fn, isCapturing) => {
+		if (isCapturing == null) isCapturing = false;
+		if (obj.addEventListener) {
+			// Firefox
+			obj.addEventListener(evType, fn, isCapturing);
+			return true;
+		} else if (obj.attachEvent) {
+			// MSIE
+			var r = obj.attachEvent("on" + evType, fn);
+			return r;
+		} else {
+			return false;
+		}
+	};
+
+	const removeEvent = (obj, evType, fn, isCapturing) => {
+		if (isCapturing == null) isCapturing = false;
+		if (obj.removeEventListener) {
+			// Firefox
+			obj.removeEventListener(evType, fn, isCapturing);
+			return true;
+		} else if (obj.detachEvent) {
+			// MSIE
+			var r = obj.detachEvent("on" + evType, fn);
+			return r;
+		} else {
+			return false;
+		}
+	};
+
+	const getSelection = (editor) => {
 		var data = editor.multiSelect.toJSON();
 		if (!data.length) data = [data];
 		data = data.map(function (x) {
@@ -207,72 +581,74 @@ $(document).ready(function () {
 				: [a.row, a.column];
 		});
 		return data.length > 1 ? data : data[0];
-	}
+	};
 
-	let reportChange = reportEvent.bind(null, "change");
-	let reportCursorChange = reportEvent.bind(null, "CursorChange");
-	let reportSelectionChange = reportEvent.bind(null, "SelectionChange");
+	const getCurrentTime = () => {
+		return Date.now() - recording.startTime;
+	};
 
-	$("#editor_record").click(() => {
-		addAction({
-			type: "setValue",
-			data: editor.getValue(),
-		});
-		addAction({
-			type: "setSelection",
-			data: getSelection(editor),
-		});
-		editor.commands.on("afterExec", onAfterExec);
-		// editor.on("mouseup", onMouseUp);
-		editor.selection.on("beforeEndOperation", onBeforeEndOperation);
-		editor.session.on("change", reportChange);
-		editor.selection.on("changeCursor", reportCursorChange);
-		editor.selection.on("changeSelection", reportSelectionChange);
-	});
-	$("#editor_play").click(() => {
-		
-	});
-	$("#editor_stop").click(() => {});
-
-	function reportEvent(name) {
-		addAction({
-			type: "event",
-			source: name,
-		});
-	}
-	function onBeforeEndOperation() {
-		addAction({
-			type: "setSelection",
-			data: getSelection(editor),
-			source: "operationEnd",
-		});
-	}
-	function onMouseUp() {
-		addAction({
-			type: "setSelection",
-			data: getSelection(editor),
-			source: "mouseup",
-		});
-	}
-	function onAfterExec(e) {
-		addAction({
-			type: "exec",
-			data: e,
-		});
-		// addAction({
-		// 	type: "value",
-		// 	data: editor.getValue(),
-		// });
-		// addAction({
-		// 	type: "selection",
-		// 	data: getSelection(editor),
-		// });
-	}
-	function addAction(a) {
-		if (a?.type === "event") {
-			console.log("# " + a.source);
-		} else {
-			console.log(a);
+	const toStringCmd = (x) => {
+		var str = "";
+		var data = x.data;
+		switch (x.type) {
+			case "exec":
+				str =
+					'editor.execCommand("' +
+					data.command.name +
+					(data.args ? '", ' + JSON.stringify(data.args) : '"') +
+					")";
+				break;
+			case "setSelection":
+				str = "setSelection(editor, " + JSON.stringify(data) + ")";
+				break;
+			case "setValue":
+				if (lastValue != data) {
+					lastValue = data;
+					str = "editor.setValue(" + JSON.stringify(data) + ", -1)";
+				} else {
+					return;
+				}
+				break;
+			case "selection":
+				str = "testSelection(editor, " + JSON.stringify(data) + ")";
+				break;
+			case "value":
+				if (lastValue != data) {
+					lastValue = data;
+					str = "testValue(editor, " + JSON.stringify(data) + ")";
+				} else {
+					return;
+				}
+				break;
 		}
-	}
+		return str + (x.source ? " // " + x.source : "");
+	};
+
+	let Root  = protobuf.Root,
+    Type  = protobuf.Type,
+    Field = protobuf.Field;
+
+	console.log(shj);
+	console.log(`${shj.base_url}assets/proto/test.proto`);
+	console.log(protobuf);
+
+	// var pbjsCls = protobuf;
+
+	// let AwesomeMessages = new Type("AwesomeMessage").add(new Field("awesomeField", 1, "string"));
+
+	// let root = new Root().define("awesomepackage").add(AwesomeMessages);
+
+	// let AwesomeMessage = root.lookupType("awesomepackage.AwesomeMessage");
+	// let payload = { awesomeField: "AwesomeString" };
+	// let message = AwesomeMessage.create(payload);
+
+	// let buffer = AwesomeMessage.encode(message).finish();
+
+	// let blob = new Blob([buffer], {type: "application/octet-stream"});
+	// console.log(buffer);
+	// console.log(blob);
+
+	// let output = AwesomeMessage.decode(buffer);
+
+	// console.log(output);
 });

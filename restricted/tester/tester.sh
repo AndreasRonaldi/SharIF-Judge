@@ -218,7 +218,7 @@ COMPILE_BEGIN_TIME=$(($(date +%s%N)/1000000));
 if [ "$EXT" = "java" ]; then
 	cp ../java.policy java.policy
 	MAINCLASS="$(grep -e 'public class\|public static void main\>' ${PROBLEMPATH}/${UN}/${FILENAME}.java  | grep -B1 "public static void main" | grep '\<class\>' | sed "s/^.*class \+//;s/ .*$//")"
-	if [ "$MAINFILENAME" != "$MAINCLASS" ]; then
+	if [ $MAINFILENAME != $MAINCLASS ]; then
 		MAINFILENAME=$MAINCLASS
 	fi
 	cp $PROBLEMPATH/$UN/$FILENAME.java $MAINFILENAME.java

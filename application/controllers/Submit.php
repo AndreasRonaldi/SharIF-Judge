@@ -295,6 +295,10 @@ class Submit extends CI_Controller
 		$data = $_POST['code_editor'];
 		$problem_id = $_POST['problem_id'];
 		$language = $_POST['language'];
+		$rec = $_POST['rec'];
+		// $buffer = $_FILES['buffer'];
+
+		// var_dump($buffer);
 		
 		$user_dir = rtrim($this->assignment_root, '/').'/assignment_'.$this->user->selected_assignment['id'].'/p'.$problem_id.'/'.$this->user->username;
 		if (!file_exists($user_dir)){
@@ -309,6 +313,20 @@ class Submit extends CI_Controller
 			echo $response;
 		}
 		else{
+			// $config['upload_path'] = $user_dir;
+			// $config['allowed_types'] = '*';
+			// $config['max_size']	= 0;
+			// $config['file_name'] = 'rec.bin';
+			// // $config['max_file_name'] = 20;
+			// $config['remove_spaces'] = TRUE;
+			// $this->upload->initialize($config);
+
+			// if ($this->upload->do_upload('buffer'))
+			// {
+			// 	$result = $this->upload->data();
+			// 	var_dump($result);
+			// }
+
 			$response = json_encode(array('status'=>TRUE, 'message'=>'Saved'));
 			if($type === FALSE){
 				echo $response;
