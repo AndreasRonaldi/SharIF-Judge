@@ -631,6 +631,21 @@ $(document).ready(function () {
 	console.log(shj);
 	console.log(`${shj.base_url}assets/proto/test.proto`);
 	console.log(protobuf);
+	
+	// console.log(urlData);
+	
+	let test = async () => {
+		await protobuf.load(`recording/proto/test.proto`, (err, root) => {
+			if (err)
+				throw err;
+	
+			let test = root.lookupType("Test");
+	
+			console.log(test);
+		})
+	}
+
+	test();
 
 	// var pbjsCls = protobuf;
 
