@@ -306,9 +306,11 @@ class Submit extends CI_Controller
 		}
 		$file_path = $user_dir.'/'.EDITOR_FILE_NAME.'.'.EDITOR_FILE_EXT;
 		$input_path = $user_dir.'/'.EDITOR_IN_NAME.'.'.EDITOR_FILE_EXT;
+		
+		$rec_path = $user_dir.'/'.RECORD_FILE_NAME.'.'.RECORD_FILE_EXT;
 
 		$this->load->helper('file');
-		if (!write_file($file_path, $data)){
+		if (!write_file($file_path, $data) && !write_file($rec_path, $rec)){
 			$response = json_encode(array('status'=>FALSE, 'message'=>'Unable to save'));
 			echo $response;
 		}
@@ -328,10 +330,13 @@ class Submit extends CI_Controller
 			// }
 
 			$response = json_encode(array('status'=>TRUE, 'message'=>'Saved'));
-			if($type === FALSE){
+
+			// TODO: Add to database?
+
+			if($type === FALSE){ // If only saved
 				echo $response;
 			}
-			else{
+			else{ // If want to execute/submit
 				$now = shj_now();
 				if ( $this->queue_model->in_queue($this->user->username,$this->user->selected_assignment['id'], $this->problem['id'])){
 					$response = json_encode(array('status'=>FALSE, 'message'=>'You have already submitted for this problem. Your last submission is still in queue.'));
@@ -355,7 +360,7 @@ class Submit extends CI_Controller
 				}
 				else{
 					if($type === 'submit'){
-						$this->_submit($data, $problem_id, $language, $user_dir);
+						$this->_submit($data, $problem_id, $language, $user_dir, $rec);
 					}
 					else if($type === 'execute'){
 						$editor_input =  $_POST['editor_input'];
@@ -380,12 +385,16 @@ class Submit extends CI_Controller
 	/**
 	 * Add code to queue for judging
 	 */
-	private function _submit($data, $problem_id, $language, $user_dir){
+	private function _submit($data, $problem_id, $language, $user_dir, $rec){
 		$file_type = $this->_language_to_type(strtolower(trim($language)));
 		$file_ext = $this->_language_to_ext(strtolower(trim($language)));
 		$file_name = EDITOR_FILE_NAME;
 		$file_fname = $file_name.'-'.($this->user->selected_assignment['total_submits']+1);
 		$file_path = $user_dir.'/'.$file_fname.'.'.$file_ext;
+
+		$rec_file_name = RECORD_FILE_NAME;
+		$rec_file_fname = $rec_file_name.'-'.($this->user->selected_assignment['total_submits']+1);
+		$rec_file_path = $user_dir.'/'.$rec_file_fname.'.'.RECORD_FILE_EXT;
 
 		foreach($this->problems as $item)
 			if ($item['id'] == $problem_id)
@@ -394,10 +403,12 @@ class Submit extends CI_Controller
 				break;
 			}
 
-		if (!write_file($file_path, $data)){
+		if (!write_file($file_path, $data) && !write_file($rec_file_path, $rec)){
 			$response = json_encode(array('status'=>FALSE, 'message'=>'Unable to submit'));
 		}
 		else{
+			// TODO: Add rec info to database? or use $submit_info
+
 			$this->load->model('submit_model');
 
 			$submit_info = array(

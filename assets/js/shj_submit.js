@@ -87,31 +87,37 @@ $(document).ready(function () {
 
 	$("#editor_save").click(function () {
 		disableEditor(true);
-		let rec = {...recording};
+		let rec = { ...recording };
 		rec.reset = "";
 
 		console.log(getCurrentTime());
 
-		let fd = new FormData();
-		fd.append('shj_csrf_token', shj.csrf_token);
-		fd.append('code_editor', editor.getValue());
-		fd.append('problem_id', $("select#problems").val());
-		fd.append('language', $("select#languages").val());
-		fd.append('rec', shj.csrf_token);
+		// let fd = new FormData();
+		// fd.append("shj_csrf_token", shj.csrf_token);
+		// fd.append("code_editor", editor.getValue());
+		// fd.append("problem_id", $("select#problems").val());
+		// fd.append("language", $("select#languages").val());
+		// fd.append("rec", JSON.stringify(rec));
 		// fd.append('buffer', blob, 'rec.bin');
 
 		$.ajax({
 			type: "POST",
 			url: shj.site_url + "submit/save",
-			data: fd,
+			data: {
+				shj_csrf_token: shj.csrf_token,
+				code_editor: editor.getValue(),
+				problem_id: $("select#problems").val(),
+				language: $("select#languages").val(),
+				rec: JSON.stringify(rec),
+			},
 			processData: false,
 			contentType: false,
 			cache: false,
 			success: function (data) {
 				data = JSON.parse(data);
 
-				console.log(JSON.parse(data['test']));
-				console.log(getCurrentTime());
+				// console.log(JSON.parse(data["test"]));
+				// console.log(getCurrentTime());
 				// console.log(data['test']);
 
 				$("#ajax_status").html(data.message);
@@ -126,7 +132,7 @@ $(document).ready(function () {
 
 	$("#editor_submit").click(function () {
 		disableEditor(true);
-		let rec = {...recording};
+		let rec = { ...recording };
 
 		$.ajax({
 			type: "POST",
@@ -158,7 +164,7 @@ $(document).ready(function () {
 
 	$("#editor_execute").click(function () {
 		disableEditor(true);
-		let rec = {...recording};
+		let rec = { ...recording };
 
 		$.ajax({
 			type: "POST",
@@ -494,9 +500,9 @@ $(document).ready(function () {
 	const recordStart = () => {
 		recording.reset();
 
-		for (let index = 0; index < 400; index++) {			
-			recordEvent("test");
-		}
+		// for (let index = 0; index < 400; index++) {
+		// 	recordEvent("test");
+		// }
 
 		Object.keys(record).forEach((evtName) => {
 			const inInclude = evtName in include;
@@ -517,7 +523,10 @@ $(document).ready(function () {
 	// ######################################################
 
 	$("#editor_record").click(() => recordStart());
-	$("#editor_play").click(() => console.log({...recording}));
+	$("#editor_play").click(() => {
+		console.log({ ...recording });
+		// download("test.json", JSON.stringify(recording));
+	});
 	$("#editor_stop").click(() => recordStop());
 
 	// Method to record listener.
@@ -531,7 +540,7 @@ $(document).ready(function () {
 			args,
 		});
 
-		// console.log(curTime + "ms", event, args);
+		console.log(curTime + "ms", event, args);
 	};
 
 	const addEvent = (obj, evType, fn, isCapturing) => {
@@ -587,6 +596,8 @@ $(document).ready(function () {
 		return Date.now() - recording.startTime;
 	};
 
+	// --- EXPERIMENT ---
+
 	const toStringCmd = (x) => {
 		var str = "";
 		var data = x.data;
@@ -624,28 +635,44 @@ $(document).ready(function () {
 		return str + (x.source ? " // " + x.source : "");
 	};
 
-	let Root  = protobuf.Root,
-    Type  = protobuf.Type,
-    Field = protobuf.Field;
+	function download(filename, text) {
+		var element = document.createElement("a");
+		element.setAttribute(
+			"href",
+			"data:text/plain;charset=utf-8," + encodeURIComponent(text)
+		);
+		element.setAttribute("download", filename);
 
-	console.log(shj);
-	console.log(`${shj.base_url}assets/proto/test.proto`);
-	console.log(protobuf);
-	
-	// console.log(urlData);
-	
-	let test = async () => {
-		await protobuf.load(`recording/proto/test.proto`, (err, root) => {
-			if (err)
-				throw err;
-	
-			let test = root.lookupType("Test");
-	
-			console.log(test);
-		})
+		element.style.display = "none";
+		document.body.appendChild(element);
+
+		element.click();
+
+		document.body.removeChild(element);
 	}
 
-	test();
+	// let Root = protobuf.Root,
+	// 	Type = protobuf.Type,
+	// 	Field = protobuf.Field;
+
+	// console.log(shj);
+	// console.log(`${shj.base_url}assets/proto/test.proto`);
+	// console.log(protobuf);
+
+	// console.log(urlData);
+
+	// let test = async () => {
+	// 	await protobuf.load(`recording/proto/test.proto`, (err, root) => {
+	// 		if (err)
+	// 			throw err;
+
+	// 		let test = root.lookupType("Test");
+
+	// 		console.log(test);
+	// 	})
+	// }
+
+	// test();
 
 	// var pbjsCls = protobuf;
 

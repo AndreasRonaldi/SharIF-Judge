@@ -1,0 +1,623 @@
+{
+	"events": [
+		{
+			"time": 609,
+			"event": "insert",
+			"args": {
+				"data": [
+					"import java.util.Scanner;",
+					" ",
+					"public class Main {",
+					"    public static void main(String[] args) {",
+					"        Scanner sc = new Scanner(System.in);",
+					"        String input = sc.nextLine();",
+					"        ",
+					"        System.out.println(input.equals(\"hi\") ? \"hello\" : \"hi\");",
+					"    }",
+					"}"
+				],
+				"start": { "row": 0, "column": 0 },
+				"end": { "row": 9, "column": 1 }
+			}
+		},
+		{ "time": 609, "event": "cursor_selection", "args": [9, 1] },
+		{ "time": 609, "event": "sel_selection", "args": [0, 0, 9, 1] },
+		{ "time": 2489, "event": "sel_selection", "args": [9, 1] },
+		{ "time": 2489, "event": "cursor_selection", "args": [7, 14] },
+		{ "time": 2490, "event": "sel_selection", "args": [7, 14] },
+		{ "time": 3056, "event": "sel_selection", "args": [7, 14] },
+		{ "time": 3056, "event": "cursor_selection", "args": [8, 5] },
+		{ "time": 3057, "event": "sel_selection", "args": [8, 5] },
+		{ "time": 4157, "event": "sel_selection", "args": [8, 5] },
+		{
+			"time": 4157,
+			"event": "insert",
+			"args": {
+				"data": ["", ""],
+				"start": { "row": 8, "column": 5 },
+				"end": { "row": 9, "column": 0 }
+			}
+		},
+		{ "time": 4157, "event": "cursor_selection", "args": [9, 0] },
+		{
+			"time": 4157,
+			"event": "insert",
+			"args": {
+				"data": ["    "],
+				"start": { "row": 9, "column": 0 },
+				"end": { "row": 9, "column": 4 }
+			}
+		},
+		{ "time": 4157, "event": "cursor_selection", "args": [9, 4] },
+		{
+			"time": 4217,
+			"event": "insert",
+			"args": {
+				"data": ["", ""],
+				"start": { "row": 9, "column": 4 },
+				"end": { "row": 10, "column": 0 }
+			}
+		},
+		{ "time": 4217, "event": "cursor_selection", "args": [10, 0] },
+		{
+			"time": 4218,
+			"event": "insert",
+			"args": {
+				"data": ["    "],
+				"start": { "row": 10, "column": 0 },
+				"end": { "row": 10, "column": 4 }
+			}
+		},
+		{ "time": 4218, "event": "cursor_selection", "args": [10, 4] },
+		{
+			"time": 4585,
+			"event": "insert",
+			"args": {
+				"data": ["p"],
+				"start": { "row": 10, "column": 4 },
+				"end": { "row": 10, "column": 5 }
+			}
+		},
+		{ "time": 4585, "event": "cursor_selection", "args": [10, 5] },
+		{
+			"time": 4808,
+			"event": "insert",
+			"args": {
+				"data": ["u"],
+				"start": { "row": 10, "column": 5 },
+				"end": { "row": 10, "column": 6 }
+			}
+		},
+		{ "time": 4808, "event": "cursor_selection", "args": [10, 6] },
+		{
+			"time": 5439,
+			"event": "remove",
+			"args": {
+				"data": ["pu"],
+				"start": { "row": 10, "column": 4 },
+				"end": { "row": 10, "column": 6 }
+			}
+		},
+		{ "time": 5439, "event": "cursor_selection", "args": [10, 4] },
+		{
+			"time": 5439,
+			"event": "insert",
+			"args": {
+				"data": ["public"],
+				"start": { "row": 10, "column": 4 },
+				"end": { "row": 10, "column": 10 }
+			}
+		},
+		{ "time": 5439, "event": "cursor_selection", "args": [10, 10] },
+		{
+			"time": 5730,
+			"event": "insert",
+			"args": {
+				"data": [" "],
+				"start": { "row": 10, "column": 10 },
+				"end": { "row": 10, "column": 11 }
+			}
+		},
+		{ "time": 5730, "event": "cursor_selection", "args": [10, 11] },
+		{
+			"time": 6010,
+			"event": "insert",
+			"args": {
+				"data": ["s"],
+				"start": { "row": 10, "column": 11 },
+				"end": { "row": 10, "column": 12 }
+			}
+		},
+		{ "time": 6010, "event": "cursor_selection", "args": [10, 12] },
+		{
+			"time": 6162,
+			"event": "insert",
+			"args": {
+				"data": ["t"],
+				"start": { "row": 10, "column": 12 },
+				"end": { "row": 10, "column": 13 }
+			}
+		},
+		{ "time": 6162, "event": "cursor_selection", "args": [10, 13] },
+		{
+			"time": 6221,
+			"event": "insert",
+			"args": {
+				"data": ["a"],
+				"start": { "row": 10, "column": 13 },
+				"end": { "row": 10, "column": 14 }
+			}
+		},
+		{ "time": 6221, "event": "cursor_selection", "args": [10, 14] },
+		{
+			"time": 6373,
+			"event": "insert",
+			"args": {
+				"data": ["t"],
+				"start": { "row": 10, "column": 14 },
+				"end": { "row": 10, "column": 15 }
+			}
+		},
+		{ "time": 6373, "event": "cursor_selection", "args": [10, 15] },
+		{
+			"time": 6603,
+			"event": "remove",
+			"args": {
+				"data": ["stat"],
+				"start": { "row": 10, "column": 11 },
+				"end": { "row": 10, "column": 15 }
+			}
+		},
+		{ "time": 6603, "event": "cursor_selection", "args": [10, 11] },
+		{
+			"time": 6603,
+			"event": "insert",
+			"args": {
+				"data": ["static"],
+				"start": { "row": 10, "column": 11 },
+				"end": { "row": 10, "column": 17 }
+			}
+		},
+		{ "time": 6603, "event": "cursor_selection", "args": [10, 17] },
+		{
+			"time": 6935,
+			"event": "insert",
+			"args": {
+				"data": [" "],
+				"start": { "row": 10, "column": 17 },
+				"end": { "row": 10, "column": 18 }
+			}
+		},
+		{ "time": 6935, "event": "cursor_selection", "args": [10, 18] },
+		{
+			"time": 7174,
+			"event": "insert",
+			"args": {
+				"data": ["v"],
+				"start": { "row": 10, "column": 18 },
+				"end": { "row": 10, "column": 19 }
+			}
+		},
+		{ "time": 7174, "event": "cursor_selection", "args": [10, 19] },
+		{
+			"time": 7336,
+			"event": "insert",
+			"args": {
+				"data": ["o"],
+				"start": { "row": 10, "column": 19 },
+				"end": { "row": 10, "column": 20 }
+			}
+		},
+		{ "time": 7336, "event": "cursor_selection", "args": [10, 20] },
+		{
+			"time": 7445,
+			"event": "insert",
+			"args": {
+				"data": ["i"],
+				"start": { "row": 10, "column": 20 },
+				"end": { "row": 10, "column": 21 }
+			}
+		},
+		{ "time": 7445, "event": "cursor_selection", "args": [10, 21] },
+		{
+			"time": 7555,
+			"event": "insert",
+			"args": {
+				"data": ["d"],
+				"start": { "row": 10, "column": 21 },
+				"end": { "row": 10, "column": 22 }
+			}
+		},
+		{ "time": 7555, "event": "cursor_selection", "args": [10, 22] },
+		{
+			"time": 7723,
+			"event": "insert",
+			"args": {
+				"data": [" "],
+				"start": { "row": 10, "column": 22 },
+				"end": { "row": 10, "column": 23 }
+			}
+		},
+		{ "time": 7723, "event": "cursor_selection", "args": [10, 23] },
+		{
+			"time": 7900,
+			"event": "insert",
+			"args": {
+				"data": ["m"],
+				"start": { "row": 10, "column": 23 },
+				"end": { "row": 10, "column": 24 }
+			}
+		},
+		{ "time": 7900, "event": "cursor_selection", "args": [10, 24] },
+		{
+			"time": 8030,
+			"event": "insert",
+			"args": {
+				"data": ["a"],
+				"start": { "row": 10, "column": 24 },
+				"end": { "row": 10, "column": 25 }
+			}
+		},
+		{ "time": 8030, "event": "cursor_selection", "args": [10, 25] },
+		{
+			"time": 8101,
+			"event": "insert",
+			"args": {
+				"data": ["i"],
+				"start": { "row": 10, "column": 25 },
+				"end": { "row": 10, "column": 26 }
+			}
+		},
+		{ "time": 8101, "event": "cursor_selection", "args": [10, 26] },
+		{
+			"time": 8186,
+			"event": "insert",
+			"args": {
+				"data": ["n"],
+				"start": { "row": 10, "column": 26 },
+				"end": { "row": 10, "column": 27 }
+			}
+		},
+		{ "time": 8186, "event": "cursor_selection", "args": [10, 27] },
+		{
+			"time": 8646,
+			"event": "insert",
+			"args": {
+				"data": ["()"],
+				"start": { "row": 10, "column": 27 },
+				"end": { "row": 10, "column": 29 }
+			}
+		},
+		{ "time": 8646, "event": "cursor_selection", "args": [10, 29] },
+		{ "time": 8646, "event": "cursor_selection", "args": [10, 28] },
+		{ "time": 8646, "event": "sel_selection", "args": [10, 28] },
+		{ "time": 9424, "event": "cursor_selection", "args": [10, 27] },
+		{ "time": 9716, "event": "sel_selection", "args": [10, 27] },
+		{ "time": 9716, "event": "cursor_selection", "args": [10, 27, 10, 23] },
+		{ "time": 9716, "event": "sel_selection", "args": [10, 27, 10, 23] },
+		{
+			"time": 10026,
+			"event": "remove",
+			"args": {
+				"data": ["main"],
+				"start": { "row": 10, "column": 23 },
+				"end": { "row": 10, "column": 27 }
+			}
+		},
+		{ "time": 10026, "event": "sel_selection", "args": [10, 23] },
+		{ "time": 10026, "event": "sel_selection", "args": [10, 23] },
+		{
+			"time": 10554,
+			"event": "insert",
+			"args": {
+				"data": ["t"],
+				"start": { "row": 10, "column": 23 },
+				"end": { "row": 10, "column": 24 }
+			}
+		},
+		{ "time": 10554, "event": "cursor_selection", "args": [10, 24] },
+		{
+			"time": 10635,
+			"event": "insert",
+			"args": {
+				"data": ["e"],
+				"start": { "row": 10, "column": 24 },
+				"end": { "row": 10, "column": 25 }
+			}
+		},
+		{ "time": 10635, "event": "cursor_selection", "args": [10, 25] },
+		{
+			"time": 10706,
+			"event": "insert",
+			"args": {
+				"data": ["s"],
+				"start": { "row": 10, "column": 25 },
+				"end": { "row": 10, "column": 26 }
+			}
+		},
+		{ "time": 10706, "event": "cursor_selection", "args": [10, 26] },
+		{
+			"time": 10787,
+			"event": "insert",
+			"args": {
+				"data": ["t"],
+				"start": { "row": 10, "column": 26 },
+				"end": { "row": 10, "column": 27 }
+			}
+		},
+		{ "time": 10787, "event": "cursor_selection", "args": [10, 27] },
+		{ "time": 11213, "event": "cursor_selection", "args": [10, 29] },
+		{
+			"time": 11705,
+			"event": "insert",
+			"args": {
+				"data": [" "],
+				"start": { "row": 10, "column": 29 },
+				"end": { "row": 10, "column": 30 }
+			}
+		},
+		{ "time": 11706, "event": "cursor_selection", "args": [10, 30] },
+		{
+			"time": 12027,
+			"event": "insert",
+			"args": {
+				"data": ["{"],
+				"start": { "row": 10, "column": 30 },
+				"end": { "row": 10, "column": 31 }
+			}
+		},
+		{ "time": 12028, "event": "cursor_selection", "args": [10, 31] },
+		{ "time": 12028, "event": "sel_selection", "args": [10, 31] },
+		{
+			"time": 12390,
+			"event": "insert",
+			"args": {
+				"data": ["", "        ", "    }"],
+				"start": { "row": 10, "column": 31 },
+				"end": { "row": 12, "column": 5 }
+			}
+		},
+		{ "time": 12390, "event": "cursor_selection", "args": [12, 5] },
+		{ "time": 12390, "event": "cursor_selection", "args": [11, 8] },
+		{ "time": 12390, "event": "sel_selection", "args": [11, 8] },
+		{
+			"time": 14218,
+			"event": "insert",
+			"args": {
+				"data": ["S"],
+				"start": { "row": 11, "column": 8 },
+				"end": { "row": 11, "column": 9 }
+			}
+		},
+		{ "time": 14218, "event": "cursor_selection", "args": [11, 9] },
+		{
+			"time": 14423,
+			"event": "insert",
+			"args": {
+				"data": ["y"],
+				"start": { "row": 11, "column": 9 },
+				"end": { "row": 11, "column": 10 }
+			}
+		},
+		{ "time": 14423, "event": "cursor_selection", "args": [11, 10] },
+		{
+			"time": 14532,
+			"event": "insert",
+			"args": {
+				"data": ["s"],
+				"start": { "row": 11, "column": 10 },
+				"end": { "row": 11, "column": 11 }
+			}
+		},
+		{ "time": 14532, "event": "cursor_selection", "args": [11, 11] },
+		{
+			"time": 15002,
+			"event": "remove",
+			"args": {
+				"data": ["Sys"],
+				"start": { "row": 11, "column": 8 },
+				"end": { "row": 11, "column": 11 }
+			}
+		},
+		{ "time": 15002, "event": "cursor_selection", "args": [11, 8] },
+		{
+			"time": 15003,
+			"event": "insert",
+			"args": {
+				"data": ["System"],
+				"start": { "row": 11, "column": 8 },
+				"end": { "row": 11, "column": 14 }
+			}
+		},
+		{ "time": 15003, "event": "cursor_selection", "args": [11, 14] },
+		{
+			"time": 15492,
+			"event": "insert",
+			"args": {
+				"data": ["."],
+				"start": { "row": 11, "column": 14 },
+				"end": { "row": 11, "column": 15 }
+			}
+		},
+		{ "time": 15492, "event": "cursor_selection", "args": [11, 15] },
+		{
+			"time": 15809,
+			"event": "insert",
+			"args": {
+				"data": ["o"],
+				"start": { "row": 11, "column": 15 },
+				"end": { "row": 11, "column": 16 }
+			}
+		},
+		{ "time": 15809, "event": "cursor_selection", "args": [11, 16] },
+		{
+			"time": 16118,
+			"event": "insert",
+			"args": {
+				"data": ["u"],
+				"start": { "row": 11, "column": 16 },
+				"end": { "row": 11, "column": 17 }
+			}
+		},
+		{ "time": 16118, "event": "cursor_selection", "args": [11, 17] },
+		{
+			"time": 16453,
+			"event": "remove",
+			"args": {
+				"data": ["ou"],
+				"start": { "row": 11, "column": 15 },
+				"end": { "row": 11, "column": 17 }
+			}
+		},
+		{ "time": 16453, "event": "cursor_selection", "args": [11, 15] },
+		{
+			"time": 16453,
+			"event": "insert",
+			"args": {
+				"data": ["out"],
+				"start": { "row": 11, "column": 15 },
+				"end": { "row": 11, "column": 18 }
+			}
+		},
+		{ "time": 16453, "event": "cursor_selection", "args": [11, 18] },
+		{
+			"time": 16752,
+			"event": "insert",
+			"args": {
+				"data": ["."],
+				"start": { "row": 11, "column": 18 },
+				"end": { "row": 11, "column": 19 }
+			}
+		},
+		{ "time": 16752, "event": "cursor_selection", "args": [11, 19] },
+		{
+			"time": 16974,
+			"event": "insert",
+			"args": {
+				"data": ["p"],
+				"start": { "row": 11, "column": 19 },
+				"end": { "row": 11, "column": 20 }
+			}
+		},
+		{ "time": 16974, "event": "cursor_selection", "args": [11, 20] },
+		{
+			"time": 17256,
+			"event": "insert",
+			"args": {
+				"data": ["i"],
+				"start": { "row": 11, "column": 20 },
+				"end": { "row": 11, "column": 21 }
+			}
+		},
+		{ "time": 17256, "event": "cursor_selection", "args": [11, 21] },
+		{
+			"time": 17366,
+			"event": "insert",
+			"args": {
+				"data": ["n"],
+				"start": { "row": 11, "column": 21 },
+				"end": { "row": 11, "column": 22 }
+			}
+		},
+		{ "time": 17366, "event": "cursor_selection", "args": [11, 22] },
+		{
+			"time": 17937,
+			"event": "remove",
+			"args": {
+				"data": ["pin"],
+				"start": { "row": 11, "column": 19 },
+				"end": { "row": 11, "column": 22 }
+			}
+		},
+		{ "time": 17938, "event": "cursor_selection", "args": [11, 19] },
+		{
+			"time": 17938,
+			"event": "insert",
+			"args": {
+				"data": ["println"],
+				"start": { "row": 11, "column": 19 },
+				"end": { "row": 11, "column": 26 }
+			}
+		},
+		{ "time": 17938, "event": "cursor_selection", "args": [11, 26] },
+		{
+			"time": 18648,
+			"event": "insert",
+			"args": {
+				"data": ["()"],
+				"start": { "row": 11, "column": 26 },
+				"end": { "row": 11, "column": 28 }
+			}
+		},
+		{ "time": 18648, "event": "cursor_selection", "args": [11, 28] },
+		{ "time": 18648, "event": "cursor_selection", "args": [11, 27] },
+		{ "time": 18648, "event": "sel_selection", "args": [11, 27] },
+		{
+			"time": 19375,
+			"event": "insert",
+			"args": {
+				"data": ["\"\""],
+				"start": { "row": 11, "column": 27 },
+				"end": { "row": 11, "column": 29 }
+			}
+		},
+		{ "time": 19375, "event": "cursor_selection", "args": [11, 29] },
+		{ "time": 19375, "event": "cursor_selection", "args": [11, 28] },
+		{ "time": 19375, "event": "sel_selection", "args": [11, 28] },
+		{
+			"time": 19744,
+			"event": "insert",
+			"args": {
+				"data": ["T"],
+				"start": { "row": 11, "column": 28 },
+				"end": { "row": 11, "column": 29 }
+			}
+		},
+		{ "time": 19744, "event": "cursor_selection", "args": [11, 29] },
+		{
+			"time": 20044,
+			"event": "insert",
+			"args": {
+				"data": ["e"],
+				"start": { "row": 11, "column": 29 },
+				"end": { "row": 11, "column": 30 }
+			}
+		},
+		{ "time": 20044, "event": "cursor_selection", "args": [11, 30] },
+		{
+			"time": 20126,
+			"event": "insert",
+			"args": {
+				"data": ["s"],
+				"start": { "row": 11, "column": 30 },
+				"end": { "row": 11, "column": 31 }
+			}
+		},
+		{ "time": 20126, "event": "cursor_selection", "args": [11, 31] },
+		{
+			"time": 20203,
+			"event": "insert",
+			"args": {
+				"data": ["t"],
+				"start": { "row": 11, "column": 31 },
+				"end": { "row": 11, "column": 32 }
+			}
+		},
+		{ "time": 20203, "event": "cursor_selection", "args": [11, 32] },
+		{ "time": 20420, "event": "cursor_selection", "args": [11, 33] },
+		{ "time": 20707, "event": "cursor_selection", "args": [11, 34] },
+		{
+			"time": 20908,
+			"event": "insert",
+			"args": {
+				"data": [";"],
+				"start": { "row": 11, "column": 34 },
+				"end": { "row": 11, "column": 35 }
+			}
+		},
+		{ "time": 20908, "event": "cursor_selection", "args": [11, 35] }
+	],
+	"startTime": 1740593708751,
+	"startValue": "",
+	"startSelection": [0, 0]
+}

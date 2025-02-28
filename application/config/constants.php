@@ -89,3 +89,6 @@ define('EDITOR_FILE_EXT', "txt");
 define('EDITOR_IN_NAME', "exec_in");
 define('EDITOR_OUT_NAME', "exec_out");
 define('EDITOR_SUBMIT_ID', 0);
+
+define('RECORD_FILE_NAME', "record");
+define('RECORD_FILE_EXT', "bin");
