@@ -91,4 +91,4 @@ define('EDITOR_OUT_NAME', "exec_out");
 define('EDITOR_SUBMIT_ID', 0);
 
 define('RECORD_FILE_NAME', "record");
-define('RECORD_FILE_EXT', "bin");
+define('RECORD_FILE_EXT', "json");

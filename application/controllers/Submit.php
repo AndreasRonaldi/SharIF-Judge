@@ -310,11 +310,12 @@ class Submit extends CI_Controller
 		$rec_path = $user_dir.'/'.RECORD_FILE_NAME.'.'.RECORD_FILE_EXT;
 
 		$this->load->helper('file');
-		if (!write_file($file_path, $data) && !write_file($rec_path, $rec)){
+		if (!(write_file($file_path, $data) && write_file($rec_path, $rec))){
 			$response = json_encode(array('status'=>FALSE, 'message'=>'Unable to save'));
 			echo $response;
 		}
 		else{
+
 			// $config['upload_path'] = $user_dir;
 			// $config['allowed_types'] = '*';
 			// $config['max_size']	= 0;
@@ -403,7 +404,7 @@ class Submit extends CI_Controller
 				break;
 			}
 
-		if (!write_file($file_path, $data) && !write_file($rec_file_path, $rec)){
+		if (!(write_file($file_path, $data) && write_file($rec_file_path, $rec))){
 			$response = json_encode(array('status'=>FALSE, 'message'=>'Unable to submit'));
 		}
 		else{

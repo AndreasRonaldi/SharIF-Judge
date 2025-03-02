@@ -53,6 +53,7 @@ class Recording extends CI_Controller
 		$this->twig->display('pages/recording.twig', $data);
 	}
 
+	// Needed for protobuf, not necessary
 	public function proto($file = "test.proto") {
 		$this->load->helper('file');
 		$this->load->helper('url');
@@ -80,30 +81,8 @@ class Recording extends CI_Controller
 
 	public function download_record() {
 		// TODO: Create this function to get rec bin file
-		$username = $this->uri->segment(3);
-		$assignment = $this->uri->segment(4);
-		$problem = $this->uri->segment(5);
-		$submit_id = $this->uri->segment(6);
+		$filepath = rtrim($this->settings_model->get_setting('assignments_root'),'/');
 
-		$submission = $this->submit_model->get_submission(
-			$username,
-			$assignment,
-			$problem,
-			$submit_id
-		);
-		if ($submission === FALSE)
-			show_404();
-
-		if ($this->user->level === 0 && $this->user->username != $submission['username'])
-			exit('Don\'t try to see submitted codes :)');
-
-		$file_path = rtrim($this->settings_model->get_setting('assignments_root'),'/').
-		"/assignment_{$submission['assignment']}/p{$submission['problem']}/{$submission['username']}/{$submission['file_name']}.".filetype_to_extension($submission['file_type']);
-
-		$this->load->helper('download');
-		force_download(
-			"{$submission['file_name']}.".filetype_to_extension($submission['file_type']),
-			file_get_contents($file_path)
-		);
+		echo $filepath;
 	}
 }

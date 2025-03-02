@@ -110,8 +110,8 @@ $(document).ready(function () {
 				language: $("select#languages").val(),
 				rec: JSON.stringify(rec),
 			},
-			processData: false,
-			contentType: false,
+			// processData: false,
+			// contentType: false,
 			cache: false,
 			success: function (data) {
 				data = JSON.parse(data);
