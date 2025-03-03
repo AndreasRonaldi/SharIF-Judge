@@ -86,9 +86,27 @@ class Install extends CI_Controller
 			$this->dbforge->add_key(array('assignment', 'submit_id'));
 			if ( ! $this->dbforge->create_table('submissions', TRUE))
 				show_error("Error creating database table ".$this->db->dbprefix('submissions'));
-
-
-
+				
+			// create table 'recording'
+			$fields = array(
+				// 'id'			=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+				'submit_id' 	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+	
+				'timestart' 	=> array('type' => $DATETIME),
+				'timeend' 		=> array('type' => $DATETIME),
+				// 'file_name' 	=> array('type' => 'VARCHAR', 'constraint' => 100),
+	
+				'assignment' 	=> array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
+				'problem'       => array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
+				'username'      => array('type' => 'VARCHAR', 'constraint' => 20),
+			);
+			$this->dbforge->add_field($fields);
+			$this->dbforge->add_key('submit_id', TRUE);
+			$this->dbforge->add_key('assignment', TRUE);
+			$this->dbforge->add_key('problem', TRUE);
+			if (! $this->dbforge->create_table('recording', TRUE))
+				show_error("Error creating database table " . $this->db->dbprefix('recording'));
+		
 			// create table 'assignments'
 			$fields = array(
 				'id'            => array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE, 'auto_increment' => TRUE),

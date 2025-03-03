@@ -108,7 +108,9 @@ $(document).ready(function () {
 				code_editor: editor.getValue(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec: JSON.stringify(rec),
+				rec_data: JSON.stringify(rec),
+				rec_start: convTimeToEpoch(rec.startTime),
+				rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
 			},
 			// processData: false,
 			// contentType: false,
@@ -142,7 +144,9 @@ $(document).ready(function () {
 				code_editor: editor.getValue(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec: JSON.stringify(rec),
+				rec_data: JSON.stringify(rec),
+				rec_start: convTimeToEpoch(rec.startTime),
+				rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
 			},
 			cache: false,
 			success: function (data) {
@@ -175,7 +179,9 @@ $(document).ready(function () {
 				editor_input: $("textarea#editor_input").val(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec: JSON.stringify(rec),
+				rec_data: JSON.stringify(rec),
+				rec_start: convTimeToEpoch(rec.startTime),
+				rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
 			},
 			cache: false,
 			success: function (data) {
@@ -594,6 +600,33 @@ $(document).ready(function () {
 
 	const getCurrentTime = () => {
 		return Date.now() - recording.startTime;
+	};
+
+	// Convert Timestamp to Epoch
+	// https://stackoverflow.com/questions/10535782/how-can-i-convert-a-date-in-epoch-to-y-m-d-his-in-javascript
+	const convTimeToEpoch = (timestamp) => {
+		var date = new Date(timestamp * 1000);
+
+		var year = date.getFullYear();
+		var month = date.getMonth() + 1;
+		var day = date.getDate();
+		var hours = date.getHours();
+		var minutes = date.getMinutes();
+		var seconds = date.getSeconds();
+
+		return (
+			year +
+				"-" +
+				month +
+				"-" +
+				day +
+				" " +
+				hours +
+				":" +
+				minutes +
+				":" +
+				seconds
+		);
 	};
 
 	// --- EXPERIMENT ---

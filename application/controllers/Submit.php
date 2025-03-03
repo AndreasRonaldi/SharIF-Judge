@@ -295,10 +295,16 @@ class Submit extends CI_Controller
 		$data = $_POST['code_editor'];
 		$problem_id = $_POST['problem_id'];
 		$language = $_POST['language'];
-		$rec = $_POST['rec'];
-		// $buffer = $_FILES['buffer'];
+		$rec_data = $_POST['rec_data'];
+		$rec_start = $_POST['rec_start'];
+		$rec_end = $_POST['rec_end'];
 
-		// var_dump($buffer);
+		$rec = array(
+			'data' => $rec_data,
+			'timestart' => $rec_start,
+			'timeend' => $rec_end,
+		);
+		// $buffer = $_FILES['buffer'];
 		
 		$user_dir = rtrim($this->assignment_root, '/').'/assignment_'.$this->user->selected_assignment['id'].'/p'.$problem_id.'/'.$this->user->username;
 		if (!file_exists($user_dir)){
@@ -310,7 +316,7 @@ class Submit extends CI_Controller
 		$rec_path = $user_dir.'/'.RECORD_FILE_NAME.'.'.RECORD_FILE_EXT;
 
 		$this->load->helper('file');
-		if (!(write_file($file_path, $data) && write_file($rec_path, $rec))){
+		if (!(write_file($file_path, $data) && write_file($rec_path, $rec['data']))){
 			$response = json_encode(array('status'=>FALSE, 'message'=>'Unable to save'));
 			echo $response;
 		}
@@ -333,6 +339,16 @@ class Submit extends CI_Controller
 			$response = json_encode(array('status'=>TRUE, 'message'=>'Saved'));
 
 			// TODO: Add to database?
+			$this->load->model('recording_model');
+			$this->load->model('recording_model');
+			$this->recording_model->add_recording(array(
+				'submit_id' 	=> 0,
+				'username' 		=> $this->user->username,
+				'assignment' 	=> $this->user->selected_assignment['id'],
+				'problem' 		=> $problem_id,
+				'timestart' 	=> $rec['timestart'], // Y-m-d H:i:s
+				'timeend' 		=> $rec['timeend'], // Y-m-d H:i:s
+			));
 
 			if($type === FALSE){ // If only saved
 				echo $response;
@@ -404,7 +420,7 @@ class Submit extends CI_Controller
 				break;
 			}
 
-		if (!(write_file($file_path, $data) && write_file($rec_file_path, $rec))){
+		if (!(write_file($file_path, $data) && write_file($rec_file_path, $rec['data']))){
 			$response = json_encode(array('status'=>FALSE, 'message'=>'Unable to submit'));
 		}
 		else{
@@ -424,6 +440,18 @@ class Submit extends CI_Controller
 				'pre_score' => 0,
 				'time' => shj_now_str(),
 			);
+
+			$this->load->model('recording_model');
+			$this->recording_model->add_recording(array(
+				'submit_id' 	=> $submit_info['submit_id'],
+				'username' 		=> $submit_info['username'],
+				'assignment' 	=> $submit_info['assignment'],
+				'problem' 		=> $submit_info['problem'],
+				'timestart' 	=> $rec['timestart'], // Y-m-d H:i:s
+				'timeend' 		=> $rec['timeend'], // Y-m-d H:i:s
+				// 'file_name' => 
+			));
+
 			if ($this->problem['is_upload_only'] == 0)
 			{
 				$this->queue_model->add_to_queue($submit_info);
