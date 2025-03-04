@@ -17,13 +17,14 @@ class Recording extends CI_Controller
 		if ($this->user->level <= 1) // permission denied
 			show_404();
 
-		$this->load->model('submit_model');
+		$this->load->model('recording_model');
+		// $this->load->model('submit_model');
 		// $this->load->library('SearchRequest');
 
 		// $test = new SearchRequest();
 	}
 
-	public function index($assignment_id = NULL, $problem_id = 1, $username = NULL, $rec_id = 1)
+	public function index($assignment_id = NULL, $problem_id = 1, $username = NULL, $rec_id = NULL)
 	{
 		// If no assignment is given, use selected assignment
 		if ($assignment_id === NULL)
@@ -33,22 +34,30 @@ class Recording extends CI_Controller
 			show_error('No assignment selected.');
 
 		$assignment = $this->assignment_model->assignment_info($assignment_id);
-		$final_submission = $this->submit_model->get_final_submissions(
-			$assignment_id,
-			$this->user->level,
-			$this->user->username,
-			NULL,
-			NULL,
-			$problem_id
-		);
+		$recordings = $this->recording_model->all_user_recordings($assignment_id, $problem_id);
 
 		$data = array(
 			'all_problems' => $this->assignment_model->all_problems($assignment_id),
 			'assignment' => $assignment,
-			'submissions' => $final_submission,
+			// 'submissions' => $final_submission,
+			'recordings' => $recordings,
 			'cur_problem' => $problem_id,
-			'username' => $username
+			'username' => $username,
+			// 'rec_id' => "rec_id=$rec_id; ",
 		);
+
+		if ($username !== NULL) {
+			$list_rec = $this->recording_model->get_user_recordings($assignment_id, $problem_id, $username);
+			$data['list_recording'] = $list_rec;
+
+			if ($rec_id === NULL) {
+				$rec_id = $list_rec[0]['rec_id'];
+			}
+
+			$data['rec_id'] = $rec_id;
+		}
+
+		// var_dump($data);
 
 		$this->twig->display('pages/recording.twig', $data);
 	}
@@ -80,12 +89,30 @@ class Recording extends CI_Controller
 		die($content);
 	}
 
-	public function download_record()
+	public function download_record($assignment_id, $problem_id, $username, $rec_id)
 	{
 		// TODO: Create this function to get rec bin file
-		$filepath = rtrim($this->settings_model->get_setting('assignments_root'), '/');
+		$assignment_root = rtrim($this->settings_model->get_setting('assignments_root'), '/');
+		$file_path = $assignment_root.'/assignment_'.$assignment_id.'/p'.$problem_id.'/'.$username;
+		$rec_path = $file_path.'/'.RECORD_FILE_NAME.'.'.RECORD_FILE_EXT;
 
-		echo $filepath;
+		$this->load->helper('file');
+		$this->load->helper('url');
+
+		if (!file_exists($rec_path)) {
+			throw new Exception("File $rec_path does not exist");
+		}
+		if (!is_readable($rec_path)) {
+			throw new Exception("File $rec_path is not readable");
+		}
+
+		$file = glob($rec_path);
+		$content = file_get_contents($file[0]);
+		header('Content-Type: application/json');
+		header('Content-Disposition: attachment; filename="rec.json"');
+		die($content);
+
+		echo $rec_path;
 	}
 
 	public function reinstall_db()
@@ -100,10 +127,11 @@ class Recording extends CI_Controller
 
 		$fields = array(
 			// 'id'			=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
-			'submit_id' 	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+			'rec_id' 	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
 
-			'timestart' 	=> array('type' => $DATETIME),
-			'timeend' 		=> array('type' => $DATETIME),
+			'upload_at'		=> array('type' => $DATETIME),
+			// 'timestart' 	=> array('type' => $DATETIME),
+			// 'timeend' 		=> array('type' => $DATETIME),
 			// 'file_name' 	=> array('type' => 'VARCHAR', 'constraint' => 100),
 
 			'assignment' 	=> array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
@@ -117,6 +145,10 @@ class Recording extends CI_Controller
 		if (! $this->dbforge->create_table('recording', TRUE))
 			show_error("Error creating database table " . $this->db->dbprefix('recording'));
 
-		echo "done";
+		echo "done ".shj_now_str();
+	}
+
+	public function test() {
+		echo shj_now_str();
 	}
 }

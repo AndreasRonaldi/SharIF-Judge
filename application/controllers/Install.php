@@ -90,10 +90,11 @@ class Install extends CI_Controller
 			// create table 'recording'
 			$fields = array(
 				// 'id'			=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
-				'submit_id' 	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+				'rec_id' 	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
 	
-				'timestart' 	=> array('type' => $DATETIME),
-				'timeend' 		=> array('type' => $DATETIME),
+				'upload_at'		=> array('type' => $DATETIME),
+				// 'timestart' 	=> array('type' => $DATETIME),
+				// 'timeend' 		=> array('type' => $DATETIME),
 				// 'file_name' 	=> array('type' => 'VARCHAR', 'constraint' => 100),
 	
 				'assignment' 	=> array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),

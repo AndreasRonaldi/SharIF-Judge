@@ -63,6 +63,7 @@ $(document).ready(() => {
 
 	let funcTimeout = null;
 
+	// TODO: Fix recording, change of format
 	const playRecording = (index) => {
 		// Get first index in recording that is more than "startTime"
 		// let firstIndex = recording.events.findIndex((c) => c.time > startTime);
@@ -93,21 +94,26 @@ $(document).ready(() => {
 		recording.reset();
 		editor.session.setValue("Starting...", -1);
 
+		console.log("recording/download_record/"+rec_path);
+
 		$.ajax({
 			type: "GET",
-			url: shj.site_url + "recording/proto/test.json",
-			// cache: false,
+			url: shj.site_url + "recording/download_record/"+rec_path,
+			cache: false,
 			success: (data) => {
-				data = JSON.parse(data);
-				recording.events = data.events;
+				// data = JSON.parse(data);
 
-				editor.session.setValue(data.startValue);
-				setSelection(editor, data.startSelection);
+				console.log(data);
 
-				// console.log(recording);
-				let firstIndex = recording.events.findIndex((c) => c.time > 0);
+				// recording.events = data.events;
 
-				playRecording(firstIndex);
+				// editor.session.setValue(data.startValue);
+				// setSelection(editor, data.startSelection);
+
+				// // console.log(recording);
+				// let firstIndex = recording.events.findIndex((c) => c.time > 0);
+
+				// playRecording(firstIndex);
 				// playRecording(883);
 			},
 			error: function (error) {

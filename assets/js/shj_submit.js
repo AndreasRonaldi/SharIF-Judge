@@ -39,6 +39,7 @@ $(document).ready(function () {
 				cache: false,
 				success: function (data) {
 					data = JSON.parse(data);
+					console.log(data);
 					editor.setValue(data.content);
 					$("#ajax_status").html(data.message);
 				},
@@ -49,9 +50,48 @@ $(document).ready(function () {
 		}
 	}
 
+	const canItBeDisabled = () => {
+		if (!isRetrived) {
+			isRetrived = true;
+		} else {
+			disableEditor(false);
+		}
+	}
+
+	const loadBeforeRec = async (problem_id) => {
+
+		const funcLoad = async (data) => {
+			data = JSON.parse(data);
+			console.log(data);
+			
+			befRecording = await JSON.parse(data.content);
+			canItBeDisabled();
+		}
+
+		if (problem_id == 0) {
+			disableEditor(true);
+			editor.setValue("");
+		} else {
+			disableEditor(true);
+			await $.ajax({
+				url: shj.site_url + "submit/load_rec/" + problem_id,
+				cache: false,
+				success: function (data) {
+					funcLoad(data);
+				},
+				error: function (error) {
+					console.error(error);
+					canItBeDisabled();
+				},
+			});
+		}
+	}
+
 	$("select#problems").change(function () {
 		var v = $(this).val();
 		loadCode(v);
+		recordStart();
+		loadBeforeRec(v);
 		$("select#languages").empty();
 		$(
 			'<option value="0" selected="selected">-- Select Language --</option>'
@@ -61,34 +101,31 @@ $(document).ready(function () {
 				'<option value="' + shj.p[v][i] + '">' + shj.p[v][i] + "</option>"
 			).appendTo("select#languages");
 
-		recordStart();
 	});
 
 	$("select#languages").change(function () {
 		if (this.value.toLowerCase().includes("java")) {
 			editor.session.setMode("ace/mode/java");
-			disableEditor(false);
 		} else if (this.value.toLowerCase().includes("python")) {
 			editor.session.setMode("ace/mode/python");
-			disableEditor(false);
 		} else if (this.value.toLowerCase().includes("c")) {
 			editor.session.setMode("ace/mode/c_cpp");
-			disableEditor(false);
 		} else if (this.value.toLowerCase().includes("txt")) {
 			editor.session.setMode("ace/mode/plain_text");
-			disableEditor(false);
 			$("#editor_execute").prop("disabled", true);
 			$("#editor_input").prop("disabled", true);
 		} else {
 			editor.session.setMode("ace/mode/plain_text");
-			disableEditor(true);
 		}
+		
+		canItBeDisabled();
 	});
 
 	$("#editor_save").click(function () {
 		disableEditor(true);
-		let rec = { ...recording };
-		rec.reset = "";
+		handlers.save();
+		// let rec = { ...recording };
+		// rec.reset = "";
 
 		console.log(getCurrentTime());
 
@@ -108,9 +145,12 @@ $(document).ready(function () {
 				code_editor: editor.getValue(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec_data: JSON.stringify(rec),
-				rec_start: convTimeToEpoch(rec.startTime),
-				rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
+				rec_data: JSON.stringify({
+					...befRecording,
+					[recording.startTime]: recording.events
+				}),
+				// rec_start: convTimeToEpoch(recording.startTime),
+				// rec_end: convTimeToEpoch(recording.startTime + recording.events[recording.events.length - 1].time),
 			},
 			// processData: false,
 			// contentType: false,
@@ -134,7 +174,8 @@ $(document).ready(function () {
 
 	$("#editor_submit").click(function () {
 		disableEditor(true);
-		let rec = { ...recording };
+		handlers.submit();
+		// let rec = { ...recording };
 
 		$.ajax({
 			type: "POST",
@@ -144,9 +185,13 @@ $(document).ready(function () {
 				code_editor: editor.getValue(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec_data: JSON.stringify(rec),
-				rec_start: convTimeToEpoch(rec.startTime),
-				rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
+				rec_data: JSON.stringify({
+					...befRecording,
+					[recording.startTime]: recording.events
+				}),
+				// rec_data: JSON.stringify(rec),
+				// rec_start: convTimeToEpoch(rec.startTime),
+				// rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
 			},
 			cache: false,
 			success: function (data) {
@@ -168,7 +213,8 @@ $(document).ready(function () {
 
 	$("#editor_execute").click(function () {
 		disableEditor(true);
-		let rec = { ...recording };
+		handlers.execute();
+		// let rec = { ...recording };
 
 		$.ajax({
 			type: "POST",
@@ -179,9 +225,13 @@ $(document).ready(function () {
 				editor_input: $("textarea#editor_input").val(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec_data: JSON.stringify(rec),
-				rec_start: convTimeToEpoch(rec.startTime),
-				rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
+				rec_data: JSON.stringify({
+					...befRecording,
+					[recording.startTime]: recording.events
+				}),
+				// rec_data: JSON.stringify(rec),
+				// rec_start: convTimeToEpoch(rec.startTime),
+				// rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
 			},
 			cache: false,
 			success: function (data) {
@@ -239,19 +289,23 @@ $(document).ready(function () {
 
 	let hidden = "hidden";
 	let visibilityChange = "visibilitychange";
+	let isRetrived = false;
+
+	// Saved Recording from before...
+	let befRecording = {}
 
 	// Saved Event
 	const recording = {
 		events: [],
 		startTime: -1,
-		startValue: "",
-		startSelection: [],
+		// startValue: "",
+		// startSelection: [],
 
 		reset: () => {
 			recording.events = [];
 			recording.startTime = Date.now();
-			recording.startValue = editor.getValue();
-			recording.startSelection = getSelection(editor);
+			// recording.startValue = editor.getValue();
+			// recording.startSelection = getSelection(editor);
 		},
 	};
 
@@ -262,7 +316,7 @@ $(document).ready(function () {
 		pdf: true,
 		input: true,
 		output: true,
-		action: true,
+		// action: true, // always true
 		others: false, // default value for other recording
 	};
 
@@ -388,9 +442,9 @@ $(document).ready(function () {
 		input_change: () => $("#editor_input").on("input", handlers.input_change),
 		output_change: () =>
 			$("textarea#editor_output").on("output_change", handlers.output_change),
-		save: () => $("#editor_save").on("click", handlers.save),
-		submit: () => $("#editor_submit").on("click", handlers.submit),
-		execute: () => $("#editor_execute").on("click", handlers.execute),
+		// save: () => $("#editor_save").on("click", handlers.save),
+		// submit: () => $("#editor_submit").on("click", handlers.submit),
+		// execute: () => $("#editor_execute").on("click", handlers.execute),
 	};
 
 	const removeListener = {
@@ -418,9 +472,9 @@ $(document).ready(function () {
 		input_change: () => $("#editor_input").off("input", handlers.input_change),
 		output_change: () =>
 			$("textarea#editor_output").off("output_change", handlers.output_change),
-		save: () => $("#editor_save").off("click", handlers.save),
-		submit: () => $("#editor_submit").off("click", handlers.submit),
-		execute: () => $("#editor_execute").off("click", handlers.execute),
+		// save: () => $("#editor_save").off("click", handlers.save),
+		// submit: () => $("#editor_submit").off("click", handlers.submit),
+		// execute: () => $("#editor_execute").off("click", handlers.execute),
 	};
 
 	// ######################################################
@@ -495,11 +549,11 @@ $(document).ready(function () {
 			addListener.output_change();
 		},
 		// Action Button
-		action: () => {
-			addListener.save();
-			addListener.submit();
-			addListener.execute();
-		},
+		// action: () => {
+		// 	addListener.save();
+		// 	addListener.submit();
+		// 	addListener.execute();
+		// },
 	};
 
 	// Methods to start recording.
@@ -605,7 +659,7 @@ $(document).ready(function () {
 	// Convert Timestamp to Epoch
 	// https://stackoverflow.com/questions/10535782/how-can-i-convert-a-date-in-epoch-to-y-m-d-his-in-javascript
 	const convTimeToEpoch = (timestamp) => {
-		var date = new Date(timestamp * 1000);
+		var date = new Date(timestamp);
 
 		var year = date.getFullYear();
 		var month = date.getMonth() + 1;
@@ -628,6 +682,8 @@ $(document).ready(function () {
 				seconds
 		);
 	};
+
+	// console.log(convTimeToEpoch(Date.now()))
 
 	// --- EXPERIMENT ---
 
