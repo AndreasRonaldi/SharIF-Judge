@@ -1,6 +1,18 @@
+/**
+ * SharIF Judge
+ * @file shj_recording.js
+ * author: Andreas Ronaldi <andreasronaldi25@gmail.com>
+ * 
+ *     Javascript codes for "Recording" page
+ */
+
 $(document).ready(() => {
+	// ######################################################
+	// ############           Variable           ############
+	// ######################################################
 	const editor = ace.edit("code_editor");
 	const Range = ace.Range;
+	let funcTimeout = null;
 
 	editor.setOptions({
 		theme: "ace/theme/monokai",
@@ -12,12 +24,15 @@ $(document).ready(() => {
 	});
 
 	const recording = {
-		events: [],
-		diration: -1,
+		events: {},
+		curIndex: Date.now() + "",
+		duration: -1,
 		save_state: [],
 
 		reset: () => {
-			recording.events = [];
+			recording.events = {};
+			recording.curIndex = Date.now() + "";
+			recording.duration = -1;
 			recording.save_state = [];
 		},
 	};
@@ -61,27 +76,55 @@ $(document).ready(() => {
 		execute: (args) => {},
 	};
 
-	let funcTimeout = null;
+	// ######################################################
+	// ############          Main Method         ############
+	// ######################################################
 
-	// TODO: Fix recording, change of format
+	const getRecording = () => {
+		recording.reset();
+		emptyEditor();
+		
+		console.log("GETTING recording/download_record/" + rec_path);
+
+		$.ajax({
+			type: "GET",
+			url: shj.site_url + "recording/download_record/" + rec_path,
+			cache: false,
+			success: (data) => {
+				console.log(data);
+				recording.events = data;
+
+				$("select#rec_selection").empty();
+				// get first curIndex
+				Object.keys(data).forEach((c) => {
+					// Push to the selection
+					$(
+						`<option value=${c}>Saved ${c}</option>`
+					).appendTo("select#rec_selection");
+
+					recording.curIndex = recording.curIndex < c ? recording.curIndex : c;
+				});
+			},
+			error: function (error) {
+				console.error(error);
+			},
+		});
+	};
+
 	const playRecording = (index) => {
-		// Get first index in recording that is more than "startTime"
-		// let firstIndex = recording.events.findIndex((c) => c.time > startTime);
+		let events = recording.events[recording.curIndex];
+		if (index >= events.length) return;
 
-		// Finish...
-		if (index >= recording.events.length) return;
-
-		let event = recording.events[index];
-		let timeDiff =
-			event.time - (index - 1 < 0 ? 0 : recording.events[index - 1].time);
+		let event = events[index];
+		let timeDiff = event.time - (index - 1 < 0 ? 0 : events[index - 1].time);
 
 		handlers[event.event](event.args);
-		// console.log(timeDiff, recording.events[index]);
+		console.log(timeDiff, events[index]);
 
-		while (timeDiff <= 10) {
+		while (timeDiff <= 0) {
 			index++;
-			event = recording.events[index];
-			timeDiff = event.time - recording.events[index - 1].time;
+			event = events[index];
+			timeDiff = event.time - events[index - 1].time;
 			handlers[event.event](event.args);
 		}
 
@@ -90,41 +133,35 @@ $(document).ready(() => {
 		}, timeDiff);
 	};
 
+	const stopRecording = () => {
+		clearTimeout(funcTimeout);
+	}
+
+	// ######################################################
+	// ############           Listener           ############
+	// ######################################################
+
+	$("select#rec_selection").change((e) => {
+		stopRecording();
+		recording.curIndex = e.currentTarget.value;
+	})
+
 	$("#rec_play").click(() => {
-		recording.reset();
-		editor.session.setValue("Starting...", -1);
+		emptyEditor();
+		let firstIndex = recording.events[recording.curIndex].findIndex(
+			(c) => c.time > 0
+		);
 
-		console.log("recording/download_record/"+rec_path);
-
-		$.ajax({
-			type: "GET",
-			url: shj.site_url + "recording/download_record/"+rec_path,
-			cache: false,
-			success: (data) => {
-				// data = JSON.parse(data);
-
-				console.log(data);
-
-				// recording.events = data.events;
-
-				// editor.session.setValue(data.startValue);
-				// setSelection(editor, data.startSelection);
-
-				// // console.log(recording);
-				// let firstIndex = recording.events.findIndex((c) => c.time > 0);
-
-				// playRecording(firstIndex);
-				// playRecording(883);
-			},
-			error: function (error) {
-				console.error(error);
-			},
-		});
+		playRecording(firstIndex);
 	});
 
 	$("#rec_stop").click(() => {
-		clearTimeout(funcTimeout);
+		stopRecording();
 	});
+
+	// ######################################################
+	// ############          Misc Method         ############
+	// ######################################################
 
 	function setSelection(editor, data) {
 		let x = data;
@@ -145,4 +182,14 @@ $(document).ready(() => {
 				  }
 		);
 	}
+
+	const emptyEditor = () => {
+		editor.session.setValue("", -1);
+	}
+
+	// ######################################################
+	// ############            Runner            ############
+	// ######################################################
+
+	getRecording();
 });

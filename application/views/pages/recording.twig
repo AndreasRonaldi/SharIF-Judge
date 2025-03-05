@@ -31,50 +31,59 @@
 <div>
 	{% if all_problems|length == 0 %}
 		<p style="text-align: center;">Nothing to show...</p>
-	{% endif %}
+	{% else %}
+		<div id="wrap_selector">
+			<h2 class="title_selector">Problem</h2>
+			<table id="wrap_sel_problem">
+				<tr>
+					{% for one_problem in all_problems %}
+						<td class="sel_problem{{ cur_problem == one_problem.id ? ' selected' }}">
+							<a id="sel_problem" dir="auto" href="{{ site_url("recording/#{assignment.id}/#{one_problem.id}") }}">{{ one_problem.name }}</a>
+						</td>
+					{% endfor %}
+				</tr>
+			</table>
 
-	{% for one_problem in all_problems %}
-		<div{{cur_problem == one_problem.id?'class="hl"'}}>
-			<span>
-				<a dir="auto" href="{{ site_url("recording/#{assignment.id}/#{one_problem.id}") }}">{{ one_problem.name }}</a>
-			</span>
-		</div>
-	{% endfor %}
-
-	{% for recording in recordings %}
-		<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{cur_problem}/#{recording.username}")}}">{{ recording.username }}</a>
-	{% endfor %}
-
-	<br/>
-
-	{% for recording in list_recording %}
-		<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{cur_problem}/#{recording.username}/#{recording.submit_id}")}}">{{ recording.upload_at }}</a>
-	{% endfor %}
-
-	{% if username != NULL %}
-		<div id="ide_wrap">
-			<fieldset id="editor_wrap">
-				<legend>Code</legend>
-				<div id="code_editor"></div>
-			</fieldset>
-			<fieldset id="in_wrap">
-				<legend>Input</legend>
-				<textarea id="editor_input" class="in_out" readonly></textarea>
-			</fieldset>
-			<fieldset id="out_wrap">
-				<legend>Output</legend>
-				<textarea id="editor_output" class="in_out" readonly></textarea>
-			</fieldset>
+			<h2 class="title_selector">Username</h2>
+			<div id="wrap_sel_user">
+			{% for recording in recordings %}
+				<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{cur_problem}/#{recording.username}")}}">{{ recording.username }}</a>
+			{% endfor %}
+			</div>
 		</div>
 
-		<br/>
+		{% for recording in list_recording %}
+			<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{cur_problem}/#{recording.username}/#{recording.submit_id}")}}">{{ recording.upload_at }}</a>
+		{% endfor %}
 
-		<div class="slidecontainer">
+		{% if username != NULL %}
+		<div id="recording_wrap">
+			<select id="rec_selection">
+			
+			</select>
+			
+			<div id="ide_wrap">
+				<fieldset id="editor_wrap">
+					<legend>Code</legend>
+					<div id="code_editor"></div>
+				</fieldset>
+				<fieldset id="in_wrap">
+					<legend>Input</legend>
+					<textarea id="editor_input" class="in_out" readonly></textarea>
+				</fieldset>
+				<fieldset id="out_wrap">
+					<legend>Output</legend>
+					<textarea id="editor_output" class="in_out" readonly></textarea>
+				</fieldset>
+			</div>
+
 			<input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+			
+			{# For Playing Currently #}
+			<button type="button" class="sharif_input" id="rec_play">Play</button>
+			<button type="button" class="sharif_input" id="rec_stop">Stop</button>
 		</div>
-		
-		<button type="button" class="sharif_input" id="rec_play">Play</button>
-		<button type="button" class="sharif_input" id="rec_stop">Stop</button>
+		{% endif %}
 	{% endif %}
 </div>
 {% endblock %}
