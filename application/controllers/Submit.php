@@ -433,6 +433,8 @@ class Submit extends CI_Controller
 		$rec_file_fname = $rec_file_name.'-'.($this->user->selected_assignment['total_submits']+1);
 		$rec_file_path = $user_dir.'/'.$rec_file_fname.'.'.RECORD_FILE_EXT;
 
+		$old_file_path = $user_dir.'/'.RECORD_FILE_NAME.'.'.RECORD_FILE_EXT;
+
 		foreach($this->problems as $item)
 			if ($item['id'] == $problem_id)
 			{
@@ -440,12 +442,10 @@ class Submit extends CI_Controller
 				break;
 			}
 
-		if (!(write_file($file_path, $data) && write_file($rec_file_path, $rec))){
+		if (!(write_file($file_path, $data) && rename($old_file_path, $rec_file_path))){
 			$response = json_encode(array('status'=>FALSE, 'message'=>'Unable to submit'));
 		}
 		else{
-			// TODO: Add rec info to database? or use $submit_info
-
 			$this->load->model('submit_model');
 
 			$submit_info = array(

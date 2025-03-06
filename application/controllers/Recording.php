@@ -139,9 +139,8 @@ class Recording extends CI_Controller
 			'username'      => array('type' => 'VARCHAR', 'constraint' => 20),
 		);
 		$this->dbforge->add_field($fields);
-		$this->dbforge->add_key('submit_id', TRUE);
-		$this->dbforge->add_key('assignment', TRUE);
-		$this->dbforge->add_key('problem', TRUE);
+		// $this->dbforge->add_key('rec_id', TRUE);
+		$this->dbforge->add_key(array('rec_id', 'assignment', 'problem', 'username'));
 		if (! $this->dbforge->create_table('recording', TRUE))
 			show_error("Error creating database table " . $this->db->dbprefix('recording'));
 

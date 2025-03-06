@@ -39,7 +39,7 @@ $(document).ready(function () {
 				cache: false,
 				success: function (data) {
 					data = JSON.parse(data);
-					console.log(data);
+					// console.log(data);
 					editor.setValue(data.content);
 					$("#ajax_status").html(data.message);
 				},
@@ -62,8 +62,13 @@ $(document).ready(function () {
 
 		const funcLoad = async (data) => {
 			data = JSON.parse(data);
-			console.log(data);
-			
+			// console.log(data);
+
+			if (data.content.trim() === "") {
+				canItBeDisabled();
+				return;
+			}
+
 			befRecording = await JSON.parse(data.content);
 			canItBeDisabled();
 		}

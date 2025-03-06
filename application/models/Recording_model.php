@@ -37,13 +37,19 @@ class Recording_model extends CI_Model
 			->result_array();
 	}
 
-	public function get_all_user_recording($assignment_id, $filter_user = NULL, $filter_problem = NULL)
-	{
-		$arr['assignment'] = $assignment_id;
-		return $this->db->order_by('submit_id', 'desc')->get_where('recording', $arr)->result_array();
-	}
+	// NOT USED
+	// public function get_all_user_recording($assignment_id, $filter_user = NULL, $filter_problem = NULL)
+	// {
+	// 	$arr['assignment'] = $assignment_id;
+	// 	return $this->db->order_by('submit_id', 'desc')->get_where('recording', $arr)->result_array();
+	// }
 
+	// TODO: Handle When duplicated save file (rec_id is 0)
 	public function add_recording($rec_info) {
 		$this->db->replace('recording', $rec_info);
+	}
+
+	public function remove_save_only_recording($assignment_id, $problem_id, $username) {
+		// TODO: Create this function
 	}
 }
