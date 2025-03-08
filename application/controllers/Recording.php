@@ -91,10 +91,13 @@ class Recording extends CI_Controller
 
 	public function download_record($assignment_id, $problem_id, $username, $rec_id)
 	{
-		// TODO: Create this function to get rec bin file
 		$assignment_root = rtrim($this->settings_model->get_setting('assignments_root'), '/');
 		$file_path = $assignment_root.'/assignment_'.$assignment_id.'/p'.$problem_id.'/'.$username;
 		$rec_path = $file_path.'/'.RECORD_FILE_NAME.'.'.RECORD_FILE_EXT;
+
+		if ($rec_id !== "0") {
+			$rec_path = $file_path.'/'.RECORD_FILE_NAME.'-'.$rec_id.'.'.RECORD_FILE_EXT;
+		}
 
 		$this->load->helper('file');
 		$this->load->helper('url');
@@ -112,7 +115,7 @@ class Recording extends CI_Controller
 		header('Content-Disposition: attachment; filename="rec.json"');
 		die($content);
 
-		echo $rec_path;
+		// echo $rec_path;
 	}
 
 	public function reinstall_db()
@@ -139,15 +142,14 @@ class Recording extends CI_Controller
 			'username'      => array('type' => 'VARCHAR', 'constraint' => 20),
 		);
 		$this->dbforge->add_field($fields);
-		// $this->dbforge->add_key('rec_id', TRUE);
-		$this->dbforge->add_key(array('rec_id', 'assignment', 'problem', 'username'));
 		if (! $this->dbforge->create_table('recording', TRUE))
 			show_error("Error creating database table " . $this->db->dbprefix('recording'));
+		// ADD Unique constraint
+		$this->db->query(
+			"ALTER TABLE {$this->db->dbprefix('recording')}
+			 ADD CONSTRAINT {$this->db->dbprefix('sruap_unique')} UNIQUE (rec_id, username, assignment, problem);"
+		);
 
 		echo "done ".shj_now_str();
-	}
-
-	public function test() {
-		echo shj_now_str();
 	}
 }

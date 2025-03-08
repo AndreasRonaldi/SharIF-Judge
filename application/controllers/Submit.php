@@ -463,14 +463,11 @@ class Submit extends CI_Controller
 
 			$this->load->model('recording_model');
 			$this->recording_model->add_recording(array(
-				'rec_id' 	=> $submit_info['submit_id'],
+				'rec_id' 		=> $submit_info['submit_id'],
 				'username' 		=> $submit_info['username'],
 				'assignment' 	=> $submit_info['assignment'],
 				'problem' 		=> $submit_info['problem'],
 				'upload_at'		=> shj_now_str(),
-				// 'timestart' 	=> $rec['timestart'], // Y-m-d H:i:s
-				// 'timeend' 		=> $rec['timeend'], // Y-m-d H:i:s
-				// 'file_name' => 
 			));
 
 			if ($this->problem['is_upload_only'] == 0)

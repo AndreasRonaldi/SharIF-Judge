@@ -53,7 +53,7 @@
 		</div>
 
 		{% for recording in list_recording %}
-			<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{cur_problem}/#{recording.username}/#{recording.submit_id}")}}">{{ recording.upload_at }}</a>
+			<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{cur_problem}/#{recording.username}/#{recording.rec_id}")}}">{{ recording.upload_at }}</a>
 		{% endfor %}
 
 		{% if username != NULL %}

@@ -102,9 +102,13 @@ class Install extends CI_Controller
 				'username'      => array('type' => 'VARCHAR', 'constraint' => 20),
 			);
 			$this->dbforge->add_field($fields);
-			$this->dbforge->add_key(array('rec_id', 'assignment', 'problem', 'username'));
 			if (! $this->dbforge->create_table('recording', TRUE))
 				show_error("Error creating database table " . $this->db->dbprefix('recording'));
+			// ADD Unique constraint
+			$this->db->query(
+				"ALTER TABLE {$this->db->dbprefix('recording')}
+				 ADD CONSTRAINT {$this->db->dbprefix('sruap_unique')} UNIQUE (rec_id, username, assignment, problem);"
+			);
 		
 			// create table 'assignments'
 			$fields = array(

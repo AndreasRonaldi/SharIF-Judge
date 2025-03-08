@@ -62,6 +62,7 @@ $route['rejudge/(:num)'] = "rejudge/index/$1";
 $route['recording/(:num)'] = "recording/index/$1";
 $route['recording/(:num)/(:num)'] = "recording/index/$1/$2";
 $route['recording/(:num)/(:num)/(:any)'] = "recording/index/$1/$2/$3";
+$route['recording/(:num)/(:num)/(:any)/(:num)'] = "recording/index/$1/$2/$3/$4";
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
 
