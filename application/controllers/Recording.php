@@ -18,12 +18,49 @@ class Recording extends CI_Controller
 			show_404();
 
 		$this->load->model('recording_model');
-		// $this->load->model('submit_model');
-		// $this->load->library('SearchRequest');
 
-		// $test = new SearchRequest();
+		$input = $this->uri->uri_to_assoc();
+
+		// var_dump($input);
+
+		$this->filter_user = $this->filter_problem = NULL;
+		if (array_key_exists('user', $input) && $input['user']) 
+		$this->filter_user = $this->form_validation->alpha_numeric($input['user'])?$input['user']:NULL;
+		if (array_key_exists('problem', $input) && $input['problem'])
+		$this->filter_problem = is_numeric($input['problem'])?$input['problem']:NULL;
 	}
 
+	// For seeing all recording
+	public function all()
+	{
+		// If no assignment is given, use selected assignment
+		// if ($assignment_id === NULL)
+		$assignment_id = $this->user->selected_assignment['id'];
+
+		if ($assignment_id == 0)
+			show_error('No assignment selected.');
+			
+		$problem = $this->assignment_model->all_problems($assignment_id);
+		$assignment = $this->assignment_model->assignment_info($assignment_id);
+		$recordings = $this->recording_model->all_user_recordings($assignment_id, $this->filter_problem, $this->filter_user);
+		$names = $this->user_model->get_names();
+
+		foreach ($recordings as &$item) {
+			$item['name'] = $names[$item['username']];
+		}
+
+		$data = array(
+			'all_problems' => $problem,
+			'assignment' => $assignment,
+			'recordings' => $recordings,
+			'filter_problem' => $this->filter_problem,
+			'filter_user' => $this->filter_user,
+		);
+
+		$this->twig->display('pages/recording_user.twig', $data);
+	}
+
+	// TODO: Fix this up pls
 	public function index($assignment_id = NULL, $problem_id = 1, $username = NULL, $rec_id = NULL)
 	{
 		// If no assignment is given, use selected assignment
@@ -34,30 +71,24 @@ class Recording extends CI_Controller
 			show_error('No assignment selected.');
 
 		$assignment = $this->assignment_model->assignment_info($assignment_id);
-		$recordings = $this->recording_model->all_user_recordings($assignment_id, $problem_id);
 
 		$data = array(
 			'all_problems' => $this->assignment_model->all_problems($assignment_id),
 			'assignment' => $assignment,
-			// 'submissions' => $final_submission,
-			'recordings' => $recordings,
-			'cur_problem' => $problem_id,
-			'username' => $username,
-			// 'rec_id' => "rec_id=$rec_id; ",
+			'filter_user' => $username,
+			'filter_problem' => $problem_id,
 		);
 
 		if ($username !== NULL) {
 			$list_rec = $this->recording_model->get_user_recordings($assignment_id, $problem_id, $username);
 			$data['list_recording'] = $list_rec;
 
-			if ($rec_id === NULL) {
+			if ($rec_id === NULL && $list_rec) {
 				$rec_id = $list_rec[0]['rec_id'];
 			}
 
 			$data['rec_id'] = $rec_id;
 		}
-
-		// var_dump($data);
 
 		$this->twig->display('pages/recording.twig', $data);
 	}

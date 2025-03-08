@@ -3,9 +3,9 @@
 div#wrap_selector {
 	display: grid;
 	grid-template-columns: minmax(100px, auto) 1fr;
-	grid-template-rows: 1fr 1fr;
 	column-gap: 20px;
 	row-gap: 8px;
+	margin-bottom: 8px;
 }
 
 h2.title_selector {
@@ -16,16 +16,9 @@ h2.title_selector {
 }
 
 table#wrap_sel_problem {
-	/* display: grid; */
+	table-layout: fixed ;
 	width: 100%;
-	/* margin-top: 12px; */
 	height: 32px;
-	/* grid-auto-flow: row dense; */
-	/* display: flex; */
-	/* flex-direction: row; */
-	/* align-items: center; */
-	/* justify-content: space-around; */
-	/* gap: 12px; */
 }
 
 td.sel_problem {
@@ -39,7 +32,7 @@ td.selected {
 	background: #E0E0E0;
 }
 
-a#sel_problem {
+td.sel_problem > a {
 	display: flex;
 	justify-content: center;
 	align-items: center;

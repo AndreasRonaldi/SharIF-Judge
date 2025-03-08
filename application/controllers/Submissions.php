@@ -297,6 +297,7 @@ class Submissions extends CI_Controller
 				$item['final_score'] = ceil($item['pre_score']*$item['coefficient']/100);
 		}
 
+		var_dump($submissions);
 
 		$data = array(
 			'view' => 'final',

@@ -51,7 +51,7 @@
 		</li>
 		{% if user.level > 1 %}
 			<li class="color-recording{{ selected=='recording' ? ' selected' }}">
-				<a href="{{ site_url('recording') }}" aria-labelledby="recording-label">
+				<a href="{{ site_url('recording/all') }}" aria-labelledby="recording-label">
 					<i class="fa fa-video-camera fa-lg"></i>
 					<span class="sidebar_text" id="recording-label">Recording</span>
 				</a>

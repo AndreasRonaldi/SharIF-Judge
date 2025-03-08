@@ -14,13 +14,16 @@ class Recording_model extends CI_Model
 		parent::__construct();
 	}
 
-	public function all_user_recordings($assignment_id, $problem_id) {
+	public function all_user_recordings($assignment_id, $filter_problem = NULL, $filter_user = NULL) {
 		$arr['assignment'] = $assignment_id;
-		$arr['problem'] = $problem_id;
+		if ($filter_problem !== NULL) 
+			$arr['problem'] = $filter_problem;
+		if ($filter_user !== NULL) 
+			$arr['username'] = $filter_user;
 
 		return $this->db
 		// ->distinct()
-			->group_by('username')
+			// ->group_by('username')
 			->order_by('username asc')
 			->get_where('recording', $arr)
 			->result_array();
