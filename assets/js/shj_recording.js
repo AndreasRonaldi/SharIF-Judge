@@ -70,16 +70,16 @@ $(document).ready(() => {
 			editor.session.remove({ start: args.start, end: args.end }),
 		cursor_selection: (args) => setSelection(editor, args),
 		sel_selection: (args) => setSelection(editor, args),
-		focus: (args) => {},
-		blur: (args) => {},
-		visibility: (args) => {},
-		pdf_focus: (args) => {},
-		pdf_blur: (args) => {},
+		focus: (args) => {setTitle("User is Focus now");},
+		blur: (args) => {setTitle("User is not Focus on website now");},
+		visibility: (args) => {setTitle("User is Switch tabs now");},
+		pdf_focus: (args) => {setTitle("User is Focus on pdf viewer now");},
+		pdf_blur: (args) => {setTitle("User is not Focus on pdf viewer now");},
 		input_change: (args) => $("#editor_input").val(args),
 		output_change: (args) => $("#editor_output").val(args),
-		save: (args) => {},
-		submit: (args) => {},
-		execute: (args) => {},
+		save: (args) => {setTitle("User just Saved");},
+		submit: (args) => {setTitle("User just Submit!");},
+		execute: (args) => {setTitle("User is running the program.");},
 	};
 
 	// ######################################################
@@ -87,6 +87,7 @@ $(document).ready(() => {
 	// ######################################################
 
 	const getRecording = () => {
+		setTitle("Loading...");
 		disabledInput(true);
 		recording.reset();
 		emptyEditor();
@@ -121,6 +122,7 @@ $(document).ready(() => {
 
 				// console.log(recording.curIndex);
 				disabledInput(false);
+				setTitle("Ready!");
 			},
 			error: function (error) {
 				console.error(error);
@@ -135,11 +137,16 @@ $(document).ready(() => {
 				// play next saved in 1 sec
 				recording.curIndex = recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
 				
+				setTitle("Playing Next");
 				funcTimeout = setTimeout(() => {
 					emptyEditor();
 					playRecording(0);
 				}, 1000);
+
+				return;
 			}
+
+			setTitle("Finish...");
 			return;
 		}
 
@@ -218,6 +225,10 @@ $(document).ready(() => {
 	const disabledInput = (bool) => {
 		$("#rec_play").prop("disabled", bool);
 		$("#rec_stop").prop("disabled", bool);
+	}
+
+	const setTitle = (input) => {
+		$("#title_section").text(input);
 	}
 
 	// ######################################################

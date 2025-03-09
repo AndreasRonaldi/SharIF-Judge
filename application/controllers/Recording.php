@@ -65,7 +65,8 @@ class Recording extends CI_Controller
 	{
 		// If no assignment is given, use selected assignment
 		if ($assignment_id === NULL)
-			$assignment_id = $this->user->selected_assignment['id'];
+			redirect('recording/all');
+			// $assignment_id = $this->user->selected_assignment['id'];
 
 		if ($assignment_id == 0)
 			show_error('No assignment selected.');
