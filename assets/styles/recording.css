@@ -1,3 +1,13 @@
+/* Overall */
+
+.title_section {
+	margin: 0;
+	margin-top: 8px;
+	display: flex;
+	align-items: center;
+	font-size: 1.5em;
+}
+
 /* Recording Header */
 
 div#wrap_selector {
@@ -10,9 +20,7 @@ div#wrap_selector {
 
 h2.title_selector {
 	margin: 0;
-	display: flex;
 	justify-content: flex-end;
-	align-items: center;
 }
 
 table#wrap_sel_problem {
@@ -91,4 +99,40 @@ textarea.in_out {
 	resize: none;
 	width: 100%;
 	height: 100%;
+}
+
+/* Input Player */
+
+div.wrap_input_player {
+	display: flex;
+	flex-direction: row;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+div.wrap_input_player > input {
+	flex: 1;
+}
+
+/* List Recording */
+
+div#wrap_sel_recording {
+	display: flex;
+	flex-direction: row;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+div.sel_recording {
+	background: #fff;
+	border-bottom: 1px solid #DDDAD0;
+    border-left: 1px solid #DDDAD0;
+	display: flex;
+	flex-direction: column;
+	padding: 8px;
+	border-radius: 4px;
+}
+
+div.sel_recording > h3 {
+	margin: 0;
 }

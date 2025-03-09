@@ -18,20 +18,26 @@ $(document).ready(() => {
 		theme: "ace/theme/monokai",
 		fontSize: "11pt",
 		readOnly: true,
-		// enableLiveAutocompletion: true,
-		// enableBasicAutocompletion: true,
-		// enableSnippets: true,
+		enableLiveAutocompletion: true,
+		enableBasicAutocompletion: true,
+		enableSnippets: true,
 	});
 
 	const recording = {
 		events: {},
-		curIndex: Date.now() + "",
+		eventsIndex: {}, // Map
+		indexEvents: {}, // Map
+		length: -1,
+		curIndex: -1,
 		duration: -1,
 		save_state: [],
 
 		reset: () => {
 			recording.events = {};
-			recording.curIndex = Date.now() + "";
+			recording.eventsIndex = {};
+			recording.indexEvents = {};
+			recording.length = -1;
+			recording.curIndex = -1;
 			recording.duration = -1;
 			recording.save_state = [];
 		},
@@ -81,6 +87,7 @@ $(document).ready(() => {
 	// ######################################################
 
 	const getRecording = () => {
+		disabledInput(true);
 		recording.reset();
 		emptyEditor();
 		
@@ -95,15 +102,25 @@ $(document).ready(() => {
 				recording.events = data;
 
 				$("select#rec_selection").empty();
-				// get first curIndex
-				Object.keys(data).forEach((c) => {
+
+				recording.length = 0;
+
+				Object.keys(data).forEach((c, i) => {
 					// Push to the selection
 					$(
 						`<option value=${c}>Saved ${c}</option>`
 					).appendTo("select#rec_selection");
-
-					recording.curIndex = recording.curIndex < c ? recording.curIndex : c;
+					recording.eventsIndex[c] = i;
+					recording.indexEvents[i] = c;
+					recording.length++;
+					
+					if (recording.curIndex === -1) {
+						recording.curIndex = c;
+					}
 				});
+
+				// console.log(recording.curIndex);
+				disabledInput(false);
 			},
 			error: function (error) {
 				console.error(error);
@@ -113,7 +130,18 @@ $(document).ready(() => {
 
 	const playRecording = (index) => {
 		let events = recording.events[recording.curIndex];
-		if (index >= events.length) return;
+		if (index >= events.length) {
+			if (recording.eventsIndex[recording.curIndex] < recording.length - 1) {
+				// play next saved in 1 sec
+				recording.curIndex = recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
+				
+				funcTimeout = setTimeout(() => {
+					emptyEditor();
+					playRecording(0);
+				}, 1000);
+			}
+			return;
+		}
 
 		let event = events[index];
 		let timeDiff = event.time - (index - 1 < 0 ? 0 : events[index - 1].time);
@@ -185,6 +213,11 @@ $(document).ready(() => {
 
 	const emptyEditor = () => {
 		editor.session.setValue("", -1);
+	}
+
+	const disabledInput = (bool) => {
+		$("#rec_play").prop("disabled", bool);
+		$("#rec_stop").prop("disabled", bool);
 	}
 
 	// ######################################################

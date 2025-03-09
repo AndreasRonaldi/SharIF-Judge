@@ -29,14 +29,13 @@
 	<script type='text/javascript' src="{{ base_url("assets/js/shj_recording.js") }}"></script>
 {% endblock %}
 
-{# TODO: Fix same with recording_user.twig #}
 {% block main_content %}
 <div>
 	{% if all_problems|length == 0 %}
 		<p style="text-align: center;">Nothing to show...</p>
 	{% else %}
 		<div id="wrap_selector">
-			<h2 class="title_selector">Problem</h2>
+			<h2 class="title_section title_selector">Problem</h2>
 			<table id="wrap_sel_problem">
 				<tr>
 					{% for one_problem in all_problems %}
@@ -47,15 +46,11 @@
 				</tr>
 			</table>
 
-			<h2 class="title_selector">Username</h2>
+			<h2 class="title_section title_selector">Username</h2>
 			<div id="wrap_sel_user">
-				<h2 class="title_selector" style="font-weight: normal; justify-content: flex-start;">{{ filter_user }}</h2>
+				<h2 class="title_section title_selector" style="font-weight: normal; justify-content: flex-start;">{{ filter_user }}</h2>
 			</div>
 		</div>
-
-		{% for recording in list_recording %}
-			<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{filter_problem}/#{recording.username}/#{recording.rec_id}")}}">{{ recording.upload_at }}</a>
-		{% endfor %}
 
 		{% if list_recording is not empty %}
 		<div id="recording_wrap">
@@ -78,11 +73,23 @@
 				</fieldset>
 			</div>
 
-			<input type="range" min="1" max="100" value="50" class="slider" id="myRange">
-			
-			{# For Playing Currently #}
-			<button type="button" class="sharif_input" id="rec_play">Play</button>
-			<button type="button" class="sharif_input" id="rec_stop">Stop</button>
+			<div class="wrap_input_player">
+				{# For Playing Currently #}
+				<button type="button" class="sharif_input" id="rec_play">Play</button>
+				<button type="button" class="sharif_input" id="rec_stop">Stop</button>
+
+				<input type="range" min="0" max="100" value="0" class="slider" id="myRange">
+			</div>
+
+			<h2 class="title_section">List Recording</h2>
+			<div id="wrap_sel_recording">
+			{% for recording in list_recording %}
+				<div class="sel_recording">
+					<h3>Recording #{{ recording.rec_id }}</h3>
+					<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{filter_problem}/#{recording.username}/#{recording.rec_id}")}}">{{ recording.upload_at }}</a>
+				</div>
+			{% endfor %}
+			</div>
 		</div>
 		{% else %}
 		Nothing Here...
