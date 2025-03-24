@@ -587,13 +587,6 @@ $(document).ready(function () {
 	// ############            Misc             #############
 	// ######################################################
 
-	$("#editor_record").click(() => recordStart());
-	$("#editor_play").click(() => {
-		console.log({ ...recording });
-		// download("test.json", JSON.stringify(recording));
-	});
-	$("#editor_stop").click(() => recordStop());
-
 	// Method to record listener.
 	const recordEvent = (event, args) => {
 		// TODO: Recording
