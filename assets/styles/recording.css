@@ -1,3 +1,12 @@
+/* Overall */
+
+.title_section, #title_section {
+	margin: 0;
+	display: flex;
+	align-items: center;
+	font-size: 1.5em;
+}
+
 /* Recording Header */
 
 div#wrap_selector {
@@ -9,10 +18,7 @@ div#wrap_selector {
 }
 
 h2.title_selector {
-	margin: 0;
-	display: flex;
 	justify-content: flex-end;
-	align-items: center;
 }
 
 table#wrap_sel_problem {
@@ -47,6 +53,7 @@ div#recording_wrap {
 	display: grid;
 	/* width: ; */
 	min-height: 50vh;
+	gap: 8px;
 }
 
 /* IDE In Recording */
@@ -91,4 +98,38 @@ textarea.in_out {
 	resize: none;
 	width: 100%;
 	height: 100%;
+}
+
+/* Input Player */
+
+div.wrap_input_player {
+	display: flex;
+	flex-direction: row;
+	gap: 8px;
+}
+
+div.wrap_input_player > input {
+	flex: 1;
+}
+
+/* List Recording */
+
+div#wrap_sel_recording {
+	display: flex;
+	flex-direction: row;
+	gap: 8px;
+}
+
+div.sel_recording {
+	background: #fff;
+	border-bottom: 1px solid #DDDAD0;
+    border-left: 1px solid #DDDAD0;
+	display: flex;
+	flex-direction: column;
+	padding: 8px;
+	border-radius: 4px;
+}
+
+div.sel_recording > h3 {
+	margin: 0;
 }
