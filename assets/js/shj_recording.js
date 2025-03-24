@@ -2,7 +2,7 @@
  * SharIF Judge
  * @file shj_recording.js
  * author: Andreas Ronaldi <andreasronaldi25@gmail.com>
- * 
+ *
  *     Javascript codes for "Recording" page
  */
 
@@ -70,17 +70,59 @@ $(document).ready(() => {
 			editor.session.remove({ start: args.start, end: args.end }),
 		cursor_selection: (args) => setSelection(editor, args),
 		sel_selection: (args) => setSelection(editor, args),
-		focus: (args) => {setTitle("User is Focus now");},
-		blur: (args) => {setTitle("User is not Focus on website now");},
-		visibility: (args) => {setTitle("User is Switch tabs now");},
-		pdf_focus: (args) => {setTitle("User is Focus on pdf viewer now");},
-		pdf_blur: (args) => {setTitle("User is not Focus on pdf viewer now");},
+		focus: (args) => {
+			setTitle("User is Focus now");
+		},
+		blur: (args) => {
+			setTitle("User is not Focus on website now");
+		},
+		visibility: (args) => {
+			setTitle("User is Switch tabs now");
+		},
+		pdf_focus: (args) => {
+			setTitle("User is Focus on pdf viewer now");
+		},
+		pdf_blur: (args) => {
+			setTitle("User is not Focus on pdf viewer now");
+		},
 		input_change: (args) => $("#editor_input").val(args),
 		output_change: (args) => $("#editor_output").val(args),
-		save: (args) => {setTitle("User just Saved");},
-		submit: (args) => {setTitle("User just Submit!");},
-		execute: (args) => {setTitle("User is running the program.");},
+		save: (args) => {
+			setTitle("User just Saved");
+		},
+		submit: (args) => {
+			setTitle("User just Submit!");
+		},
+		execute: (args) => {
+			setTitle("User is running the program.");
+		},
 	};
+
+	const mult = {
+		"s" : 1000,
+		"m" : 1000 * 60,
+		"h" : 1000 * 60 * 60,
+		"d" : 1000 * 60 * 60 * 24,
+		"w" : 1000 * 60 * 60 * 24 * 7,
+		"y" : 1000 * 60 * 60 * 24 * 7 * 365.25,
+	}
+
+	const nameInChart = {
+		insert: "Insert",
+		remove: "Remove",
+		cursor_selection: "Cursor Change",
+		sel_selection: "Selection Change",
+		focus: "Focus tabs",
+		blur: "Unfocus tabs",
+		visibility: "Change tabs",
+		pdf_focus: "Focus PDF Viewer",
+		pdf_blur: "Unfocus PDF Viewer",
+		input_change: "Change Input",
+		output_change: "Change Output",
+		save: "Save",
+		submit: "Submit",
+		execute: "Execute",
+	}
 
 	// ######################################################
 	// ############          Main Method         ############
@@ -88,10 +130,11 @@ $(document).ready(() => {
 
 	const getRecording = () => {
 		setTitle("Loading...");
+		setLoading(true);
 		disabledInput(true);
 		recording.reset();
 		emptyEditor();
-		
+
 		console.log("GETTING recording/download_record/" + rec_path);
 
 		$.ajax({
@@ -108,21 +151,22 @@ $(document).ready(() => {
 
 				Object.keys(data).forEach((c, i) => {
 					// Push to the selection
-					$(
-						`<option value=${c}>Saved ${c}</option>`
-					).appendTo("select#rec_selection");
+					$(`<option value=${c}>Saved ${c}</option>`).appendTo(
+						"select#rec_selection"
+					);
 					recording.eventsIndex[c] = i;
 					recording.indexEvents[i] = c;
 					recording.length++;
-					
+
 					if (recording.curIndex === -1) {
 						recording.curIndex = c;
 					}
 				});
 
-				// console.log(recording.curIndex);
+				setUpChart();
 				disabledInput(false);
 				setTitle("Ready!");
+				setLoading(false);
 			},
 			error: function (error) {
 				console.error(error);
@@ -135,8 +179,9 @@ $(document).ready(() => {
 		if (index >= events.length) {
 			if (recording.eventsIndex[recording.curIndex] < recording.length - 1) {
 				// play next saved in 1 sec
-				recording.curIndex = recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
-				
+				recording.curIndex =
+					recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
+
 				setTitle("Playing Next");
 				funcTimeout = setTimeout(() => {
 					emptyEditor();
@@ -170,7 +215,105 @@ $(document).ready(() => {
 
 	const stopRecording = () => {
 		clearTimeout(funcTimeout);
-	}
+	};
+
+	// ######################################################
+	// ############         Chart Method         ############
+	// ######################################################
+
+	const setUpChart = (index = recording.curIndex, type = "bar", divider = 1, time = "s") => {
+		let times = calcTimeForChart(recording.events[index], divider, time);
+		let data = formatToChartData(recording.events[index], times);
+
+		const ctx = document.getElementById("recording_chart");
+		
+		const dataChart = {
+			labels: times.map((c) => c.time),
+			datasets: Object.entries(data).map(([k, v]) => {
+				return {
+					label: nameInChart[k],
+					data: v,
+				};
+			}),
+		}
+
+		const configChart = {
+			type: type,
+			options: {
+				responsive: true,
+				scales: {
+					x: {
+						stacked: true,
+					},
+					y: {
+						stacked: true,
+					},
+				},
+			},
+		};
+
+		const chart = new Chart(ctx, {
+			...configChart,
+			data: dataChart,
+		});
+
+		return chart;
+	};
+
+	const formatToChartData = (arrEvent, arrTimes) => {
+		let res = {};
+
+		let idxTimes = 0;
+
+		arrEvent.forEach((e) => {
+			while (e.time > arrTimes[idxTimes].ms) {
+				idxTimes++;
+			}
+
+			if (!res[e.event]) {
+				res[e.event] = {};
+			}
+
+			if (!res[e.event][arrTimes[idxTimes].time]) {
+				res[e.event][arrTimes[idxTimes].time] = 0;
+			}
+
+			res[e.event][arrTimes[idxTimes].time]++;
+		});
+
+		return res;
+	};
+
+	const calcTimeForChart = (arrEvent, divider, time) => {
+		let res = [];
+
+		let dev = calcTimeToMilliSec(divider, time);
+		let max = arrEvent[arrEvent.length - 1].time;
+		let i = 1;
+		// console.log(dev);
+
+		for (; dev * i < max; i++) {
+			res.push({
+				time: divider * i + time,
+				ms: dev * i
+			});
+		}
+
+		res.push({
+			time: divider * i + time,
+			ms: dev * i,
+		});
+
+		return res;
+	};
+
+	const calcTimeToMilliSec = (divider, time) => {
+		if (mult[time]) {
+			return divider * mult[time];
+		}
+
+		return divider;
+	};
 
 	// ######################################################
 	// ############           Listener           ############
@@ -179,7 +322,7 @@ $(document).ready(() => {
 	$("select#rec_selection").change((e) => {
 		stopRecording();
 		recording.curIndex = e.currentTarget.value;
-	})
+	});
 
 	$("#rec_play").click(() => {
 		emptyEditor();
@@ -220,15 +363,26 @@ $(document).ready(() => {
 
 	const emptyEditor = () => {
 		editor.session.setValue("", -1);
-	}
+	};
 
 	const disabledInput = (bool) => {
 		$("#rec_play").prop("disabled", bool);
 		$("#rec_stop").prop("disabled", bool);
-	}
+	};
 
-	const setTitle = (input) => {
-		$("#title_section").text(input);
+	const setTitle = (title) => {
+		$("#status_rec").text(title);
+	};
+
+	const setLoading = (bool) => {
+		const mainEle = $("#recording_wrap");
+		const status = $("#status_rec");
+
+		if (bool) {
+			mainEle.hide();
+		} else {
+			mainEle.show();
+		}
 	}
 
 	// ######################################################
