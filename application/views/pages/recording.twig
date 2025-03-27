@@ -22,8 +22,8 @@
 	<script>
 		var rec_path='{{ assignment.id }}/{{ filter_problem }}/{{ filter_user }}/{{ rec_id }}';
 
-		var test = `{{ filter_user | json_encode(constant('JSON_PRETTY_PRINT')) }}`;
-		console.log(test)
+		{# var test = `{{ filter_user | json_encode(constant('JSON_PRETTY_PRINT')) }}`;
+		console.log(test) #}
 	</script>
 
 	<script src="{{ base_url("assets/chartjs/dist/chart.umd.js") }}"></script>
@@ -59,10 +59,9 @@
 
 		{% if list_recording is not empty %}
 		<div id="recording_wrap">
-			<select id="rec_selection">
-			</select>			
 			
 			{# Chart #}
+			<h2 class="title_section">Player</h2>
 			<div id="ide_wrap">
 				<fieldset id="editor_wrap">
 					<legend>Code</legend>
@@ -89,6 +88,20 @@
 
 				<input type="range" min="0" max="100" value="0" class="slider" id="myRange">
 			</div>
+
+			{# List of saved #}
+			<h2 class="title_section">List Of Work on Recording</h2>
+			<table class="sharif_table">
+				<thead>
+					<tr>
+						<th>Work Time</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody id="tbody_saved">
+				</tbody>
+			</table>
+
 
 			{# Chart #}
 			<h2 class="title_section">Chart Of Action</h2>

@@ -654,33 +654,6 @@ $(document).ready(function () {
 		return Date.now() - recording.startTime;
 	};
 
-	// Convert Timestamp to Epoch
-	// https://stackoverflow.com/questions/10535782/how-can-i-convert-a-date-in-epoch-to-y-m-d-his-in-javascript
-	const convTimeToEpoch = (timestamp) => {
-		var date = new Date(timestamp);
-
-		var year = date.getFullYear();
-		var month = date.getMonth() + 1;
-		var day = date.getDate();
-		var hours = date.getHours();
-		var minutes = date.getMinutes();
-		var seconds = date.getSeconds();
-
-		return (
-			year +
-				"-" +
-				month +
-				"-" +
-				day +
-				" " +
-				hours +
-				":" +
-				minutes +
-				":" +
-				seconds
-		);
-	};
-
 	// console.log(convTimeToEpoch(Date.now()))
 
 	// --- EXPERIMENT ---

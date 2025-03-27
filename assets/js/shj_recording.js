@@ -66,46 +66,64 @@ $(document).ready(() => {
 			// 	args.data
 			// ),
 		},
-		remove: (args) =>
-			editor.session.remove({ start: args.start, end: args.end }),
-		cursor_selection: (args) => setSelection(editor, args),
-		sel_selection: (args) => setSelection(editor, args),
+		remove: (args) => {
+			editor.session.remove({ start: args.start, end: args.end });
+		},
+		cursor_selection: (args) => {
+			setSelection(editor, args);
+		},
+		sel_selection: (args) => {
+			setSelection(editor, args);
+		},
 		focus: (args) => {
-			setTitle("User is Focus now");
+			setStatus("User is focus now");
+			setTitle("User is focus now");
 		},
 		blur: (args) => {
-			setTitle("User is not Focus on website now");
+			setStatus("User is not focus on website now");
+			setTitle("User is not focus on website now");
 		},
 		visibility: (args) => {
-			setTitle("User is Switch tabs now");
+			if (args) {
+				setStatus("Open SharIF-Judge");
+				setTitle("User is on SharIF-Judge now");
+			} else {
+				setStatus("Switching tabs");
+				setTitle("User is on other tabs now");
+			}
 		},
 		pdf_focus: (args) => {
-			setTitle("User is Focus on pdf viewer now");
+			setStatus("User is focus on pdf viewer now");
+			setTitle("User is focus on pdf viewer now");
 		},
 		pdf_blur: (args) => {
-			setTitle("User is not Focus on pdf viewer now");
+			setStatus("User is not focus on pdf viewer now");
+			setTitle("User is not focus on pdf viewer now");
 		},
 		input_change: (args) => $("#editor_input").val(args),
 		output_change: (args) => $("#editor_output").val(args),
 		save: (args) => {
-			setTitle("User just Saved");
+			setStatus("User just saved");
+			setTitle("User just saved");
 		},
 		submit: (args) => {
-			setTitle("User just Submit!");
+			setStatus("User just submit!");
+			setTitle("User just submit!");
 		},
 		execute: (args) => {
+			setStatus("User is running the program.");
 			setTitle("User is running the program.");
 		},
 	};
 
 	const mult = {
-		"s" : 1000,
-		"m" : 1000 * 60,
-		"h" : 1000 * 60 * 60,
-		"d" : 1000 * 60 * 60 * 24,
-		"w" : 1000 * 60 * 60 * 24 * 7,
-		"y" : 1000 * 60 * 60 * 24 * 7 * 365.25,
-	}
+		s: 1000,
+		m: 1000 * 60,
+		h: 1000 * 60 * 60,
+		d: 1000 * 60 * 60 * 24,
+		w: 1000 * 60 * 60 * 24 * 7,
+		y: 1000 * 60 * 60 * 24 * 7 * 365.25,
+	};
 
 	const nameInChart = {
 		insert: "Insert",
@@ -122,7 +140,7 @@ $(document).ready(() => {
 		save: "Save",
 		submit: "Submit",
 		execute: "Execute",
-	}
+	};
 
 	// ######################################################
 	// ############          Main Method         ############
@@ -150,10 +168,16 @@ $(document).ready(() => {
 				recording.length = 0;
 
 				Object.keys(data).forEach((c, i) => {
-					// Push to the selection
-					$(`<option value=${c}>Saved ${c}</option>`).appendTo(
-						"select#rec_selection"
-					);
+					// TODO: Finish this...
+					// Push to table of saved
+					$(`<tr>
+							<td>${convTimeToEpoch(c)}</td>
+							<td>
+								<a>
+									Select
+								</a>
+							</td>
+					</tr>`).appendTo("tbody#tbody_saved");
 					recording.eventsIndex[c] = i;
 					recording.indexEvents[i] = c;
 					recording.length++;
@@ -167,6 +191,7 @@ $(document).ready(() => {
 				disabledInput(false);
 				setTitle("Ready!");
 				setLoading(false);
+				setStatus("Ready!");
 			},
 			error: function (error) {
 				console.error(error);
@@ -177,29 +202,21 @@ $(document).ready(() => {
 	const playRecording = (index) => {
 		let events = recording.events[recording.curIndex];
 		if (index >= events.length) {
-			if (recording.eventsIndex[recording.curIndex] < recording.length - 1) {
-				// play next saved in 1 sec
-				recording.curIndex =
-					recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
-
+			if (playNextRecording()) {
+				setStatus("Playing Next");
 				setTitle("Playing Next");
-				funcTimeout = setTimeout(() => {
-					emptyEditor();
-					playRecording(0);
-				}, 1000);
-
-				return;
+			} else {
+				setStatus("Finish...");
+				setTitle("Finish...");
 			}
-
-			setTitle("Finish...");
-			return;
 		}
 
 		let event = events[index];
 		let timeDiff = event.time - (index - 1 < 0 ? 0 : events[index - 1].time);
 
 		handlers[event.event](event.args);
-		console.log(timeDiff, events[index]);
+		// console.log(timeDiff, events[index]);
+		// setStatus(true, event.event);
 
 		while (timeDiff <= 0) {
 			index++;
@@ -213,6 +230,23 @@ $(document).ready(() => {
 		}, timeDiff);
 	};
 
+	const playNextRecording = () => {
+		if (recording.eventsIndex[recording.curIndex] < recording.length - 1) {
+			// play next saved in 1 sec
+			recording.curIndex =
+				recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
+
+			funcTimeout = setTimeout(() => {
+				emptyEditor();
+				playRecording(0);
+			}, 1000);
+
+			return true;
+		}
+
+		return false;
+	};
+
 	const stopRecording = () => {
 		clearTimeout(funcTimeout);
 	};
@@ -221,12 +255,17 @@ $(document).ready(() => {
 	// ############         Chart Method         ############
 	// ######################################################
 
-	const setUpChart = (index = recording.curIndex, type = "bar", divider = 1, time = "s") => {
+	const setUpChart = (
+		index = recording.curIndex,
+		type = "bar",
+		divider = 1,
+		time = "s"
+	) => {
 		let times = calcTimeForChart(recording.events[index], divider, time);
 		let data = formatToChartData(recording.events[index], times);
 
 		const ctx = document.getElementById("recording_chart");
-		
+
 		const dataChart = {
 			labels: times.map((c) => c.time),
 			datasets: Object.entries(data).map(([k, v]) => {
@@ -235,7 +274,7 @@ $(document).ready(() => {
 					data: v,
 				};
 			}),
-		}
+		};
 
 		const configChart = {
 			type: type,
@@ -295,7 +334,7 @@ $(document).ready(() => {
 		for (; dev * i < max; i++) {
 			res.push({
 				time: divider * i + time,
-				ms: dev * i
+				ms: dev * i,
 			});
 		}
 
@@ -370,20 +409,57 @@ $(document).ready(() => {
 		$("#rec_stop").prop("disabled", bool);
 	};
 
+	// Convert Timestamp to Epoch
+	// https://stackoverflow.com/questions/10535782/how-can-i-convert-a-date-in-epoch-to-y-m-d-his-in-javascript
+	const convTimeToEpoch = (timestamp) => {
+		var date = new Date(parseInt(timestamp));
+
+		var year = date.getFullYear();
+		var month = date.getMonth() + 1;
+		var day = date.getDate();
+		var hours = date.getHours();
+		var minutes = date.getMinutes();
+		var seconds = date.getSeconds();
+
+		return (
+			year +
+				"-" +
+				month +
+				"-" +
+				day +
+				" " +
+				hours +
+				":" +
+				minutes +
+				":" +
+				seconds
+		);
+	};
+
 	const setTitle = (title) => {
 		$("#status_rec").text(title);
 	};
 
+	const setStatus = (text = "...") => {
+		const status = $("#status_wrapper");
+
+		status.show();
+		status.text(text);
+
+		setTimeout(() => {
+			status.hide();
+		}, 1000);
+	};
+
 	const setLoading = (bool) => {
 		const mainEle = $("#recording_wrap");
-		const status = $("#status_rec");
 
 		if (bool) {
 			mainEle.hide();
 		} else {
 			mainEle.show();
 		}
-	}
+	};
 
 	// ######################################################
 	// ############            Runner            ############
