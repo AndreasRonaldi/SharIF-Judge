@@ -12,7 +12,29 @@ $(document).ready(() => {
 	// ######################################################
 	const editor = ace.edit("code_editor");
 	const Range = ace.Range;
-	let funcTimeout = null;
+
+	let funcTimeoutRecording = null;
+	let funcIntervalTimer = null;
+
+	let curChart = null;
+	let isRecPlaying = false;
+
+	let confTimer = {
+		delay: 1,
+	}
+
+	let confChart = {
+		type: "bar",
+		divider: 1,
+		time: "s",
+		stack: true,
+		// fill: false,
+		// step: false,
+	};
+	
+	let confPlayer = {
+		durationNext: 0
+	}
 
 	editor.setOptions({
 		theme: "ace/theme/monokai",
@@ -24,13 +46,13 @@ $(document).ready(() => {
 	});
 
 	const recording = {
-		events: {},
-		eventsIndex: {}, // Map
-		indexEvents: {}, // Map
-		length: -1,
-		curIndex: -1,
-		duration: -1,
-		save_state: [],
+		events: {}, // Map -> time events to list of events
+		eventsIndex: {}, // Map -> index to time events
+		indexEvents: {}, // Map -> time events to index
+		length: -1, // Length of list of saved events
+		curIndex: -1, // Currently selected index
+		duration: 0, // Duration of events
+		save_state: [], // Saved state to use in playback
 
 		reset: () => {
 			recording.events = {};
@@ -38,7 +60,7 @@ $(document).ready(() => {
 			recording.indexEvents = {};
 			recording.length = -1;
 			recording.curIndex = -1;
-			recording.duration = -1;
+			recording.duration = 0;
 			recording.save_state = [];
 		},
 	};
@@ -168,30 +190,41 @@ $(document).ready(() => {
 				recording.length = 0;
 
 				Object.keys(data).forEach((c, i) => {
-					// TODO: Finish this...
 					// Push to table of saved
 					$(`<tr>
 							<td>${convTimeToEpoch(c)}</td>
-							<td>
-								<a>
-									Select
-								</a>
+							<td>${convTimeToEpoch(parseInt(c) + data[c][data[c].length - 1].time)}</td>
+							<td id="sel_${c}" class="sel_recording">
+								Select
 							</td>
 					</tr>`).appendTo("tbody#tbody_saved");
+
+					$(`#sel_${c}`).click(() => setSelectedSaveTime(c));
+
 					recording.eventsIndex[c] = i;
 					recording.indexEvents[i] = c;
 					recording.length++;
 
+					recording.duration += data[c][data[c].length - 1].time;
+
 					if (recording.curIndex === -1) {
 						recording.curIndex = c;
+					} else {
+						recording.duration += confPlayer.durationNext;
 					}
 				});
 
-				setUpChart();
+				// console.log(recording.duration);
+
+				$(`#range_player`).attr('max', recording.duration);
+				$(`#sel_${recording.curIndex}`).text("Selected");
+				$(`#sel_${recording.curIndex}`).addClass("sel_selected");
 				disabledInput(false);
 				setTitle("Ready!");
 				setLoading(false);
 				setStatus("Ready!");
+				
+				setUpChart();
 			},
 			error: function (error) {
 				console.error(error);
@@ -205,9 +238,11 @@ $(document).ready(() => {
 			if (playNextRecording()) {
 				setStatus("Playing Next");
 				setTitle("Playing Next");
+				return;
 			} else {
 				setStatus("Finish...");
 				setTitle("Finish...");
+				return;
 			}
 		}
 
@@ -225,21 +260,44 @@ $(document).ready(() => {
 			handlers[event.event](event.args);
 		}
 
-		funcTimeout = setTimeout(() => {
+		funcTimeoutRecording = setTimeout(() => {
 			playRecording(index + 1);
 		}, timeDiff);
 	};
 
+	const startTimer = (time) => {
+		const update = () => {
+			let val = parseInt($(`#range_player`).val());
+			// console.log("start", val);
+			val += 1;
+			// console.log("update", val);
+			$(`#range_player`).val(val);
+			updateTimerRange();
+		}
+
+		if (!funcIntervalTimer) {
+			funcIntervalTimer = setInterval(
+				update,
+				confTimer.delay,
+			);
+		}
+	}
+
 	const playNextRecording = () => {
 		if (recording.eventsIndex[recording.curIndex] < recording.length - 1) {
 			// play next saved in 1 sec
-			recording.curIndex =
-				recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
+			// recording.curIndex =
+			// 	recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
 
-			funcTimeout = setTimeout(() => {
+			setSelectedSaveTime(
+				recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1],
+				false
+			);
+
+			funcTimeoutRecording = setTimeout(() => {
 				emptyEditor();
 				playRecording(0);
-			}, 1000);
+			}, confPlayer.durationNext);
 
 			return true;
 		}
@@ -247,8 +305,12 @@ $(document).ready(() => {
 		return false;
 	};
 
+	const stopTimer = () => {
+		clearTimeout(funcIntervalTimer);
+	}
+
 	const stopRecording = () => {
-		clearTimeout(funcTimeout);
+		clearTimeout(funcTimeoutRecording);
 	};
 
 	// ######################################################
@@ -257,10 +319,16 @@ $(document).ready(() => {
 
 	const setUpChart = (
 		index = recording.curIndex,
-		type = "bar",
-		divider = 1,
-		time = "s"
+		type = confChart.type ? confChart.type : "bar",
+		divider = confChart.divider ? confChart.divider : 1,
+		time = confChart.time ? confChart.time : "s",
+		stack = confChart.stack != undefined ? confChart.stack : true,
+		step = confChart.step != undefined ? confChart.step : false,
+		fill = confChart.fill != undefined ? confChart.fill : false
 	) => {
+		console.log(stack);
+		if (curChart != null) curChart.destroy();
+
 		let times = calcTimeForChart(recording.events[index], divider, time);
 		let data = formatToChartData(recording.events[index], times);
 
@@ -272,6 +340,8 @@ $(document).ready(() => {
 				return {
 					label: nameInChart[k],
 					data: v,
+					fill: fill,
+					stepped: step,
 				};
 			}),
 		};
@@ -279,13 +349,12 @@ $(document).ready(() => {
 		const configChart = {
 			type: type,
 			options: {
-				responsive: true,
 				scales: {
 					x: {
-						stacked: true,
+						stacked: stack,
 					},
 					y: {
-						stacked: true,
+						stacked: stack,
 					},
 				},
 			},
@@ -296,6 +365,7 @@ $(document).ready(() => {
 			data: dataChart,
 		});
 
+		curChart = chart;
 		return chart;
 	};
 
@@ -333,13 +403,13 @@ $(document).ready(() => {
 
 		for (; dev * i < max; i++) {
 			res.push({
-				time: divider * i + time,
+				time: Math.floor(divider * i * 100) / 100 + time,
 				ms: dev * i,
 			});
 		}
 
 		res.push({
-			time: divider * i + time,
+			time: Math.floor(divider * i * 100) / 100 + time,
 			ms: dev * i,
 		});
 
@@ -355,25 +425,79 @@ $(document).ready(() => {
 	};
 
 	// ######################################################
+	// ##########        Set Up Config Chart       ##########
+	// ######################################################
+
+	const setUpTimeDividerSelector = (selectID) => {
+		Object.keys(mult).forEach((c) => {
+			console.log();
+			$(`
+				<option value="${c}">
+					${c}
+				</option>
+			`).appendTo(`#${selectID}`);
+		});
+	};
+
+	// ######################################################
+	// ##########       Listener Config Chart      ##########
+	// ######################################################
+
+	$("#config_chart_type").on("change", (e) => {
+		let val = $("#config_chart_type").val();
+		confChart.type = val;
+		setUpChart();
+	});
+
+	$("#config_chart_stack").on("click", (e) => {
+		let val = $("#config_chart_stack").prop("checked");
+		confChart.stack = val;
+		setUpChart();
+	});
+
+	$("#config_chart_divider").on("input", (e) => {
+		let val = $("#config_chart_divider").val();
+		if (val > 0) {
+			console.log("Change divider to", val);
+			confChart.divider = val;
+			setUpChart();
+		}
+	});
+
+	$("#config_chart_time").on("change", (e) => {
+		let val = $("#config_chart_time").val();
+		console.log("Change time to", val);
+		confChart.time = val;
+		setUpChart();
+	});
+
+	// ######################################################
 	// ############           Listener           ############
 	// ######################################################
 
-	$("select#rec_selection").change((e) => {
-		stopRecording();
-		recording.curIndex = e.currentTarget.value;
+	$("#rec_btn").click(() => {
+		if (isRecPlaying) {
+			// if recording is playing -> stop
+			stopTimer();
+			stopRecording();
+			$("#rec_btn").text("Play");
+		} else {
+			// if recording is not played -> played in the time in input.
+			emptyEditor();
+			let firstIndex = recording.events[recording.curIndex].findIndex(
+				(c) => c.time > 0
+			);
+
+			startTimer();
+			playRecording(firstIndex);
+			$("#rec_btn").text("Stop");
+		}
+
+		isRecPlaying = !isRecPlaying;
 	});
 
-	$("#rec_play").click(() => {
-		emptyEditor();
-		let firstIndex = recording.events[recording.curIndex].findIndex(
-			(c) => c.time > 0
-		);
-
-		playRecording(firstIndex);
-	});
-
-	$("#rec_stop").click(() => {
-		stopRecording();
+	$("#range_player").on("change mousemove", function () {
+		updateTimerRange();
 	});
 
 	// ######################################################
@@ -423,21 +547,35 @@ $(document).ready(() => {
 
 		return (
 			year +
-				"-" +
-				month +
-				"-" +
-				day +
-				" " +
-				hours +
-				":" +
-				minutes +
-				":" +
-				seconds
+			"-" +
+			month +
+			"-" +
+			day +
+			" " +
+			hours +
+			":" +
+			minutes +
+			":" +
+			seconds
 		);
 	};
 
 	const setTitle = (title) => {
 		$("#status_rec").text(title);
+	};
+
+	const setSelectedSaveTime = (time, stop = true) => {
+		if (time == recording.curIndex) return;
+
+		if (stop) stopRecording();
+		$(`#sel_${recording.curIndex}`).text("Select");
+		$(`#sel_${recording.curIndex}`).removeClass("sel_selected");
+
+		recording.curIndex = time;
+		$(`#sel_${time}`).text("Selected");
+		$(`#sel_${time}`).addClass("sel_selected");
+
+		setUpChart(time);
 	};
 
 	const setStatus = (text = "...") => {
@@ -461,9 +599,36 @@ $(document).ready(() => {
 		}
 	};
 
+	const updateTimerRange = (idRange = "#range_player", idSpan = `#timer_player`) => {
+		const val = ($(idRange).val() / recording.duration) * 100;
+		const ms = $(idRange).val();
+
+		let seconds = ms / 1000;
+		const hours = parseInt( seconds / 3600 ).toFixed(0); 
+		seconds = seconds % 3600; 
+		const minutes = parseInt( seconds / 60 ).toFixed(0);
+		seconds = (seconds % 60).toFixed(0);
+
+		const valTime = (hours > 0 ? (hours < 10 ? '0' : '') + hours + ":" : "") + (minutes < 10 ? '0' : '') + minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+
+		$(idSpan).text(valTime);
+
+		$(idRange).css(
+			"background",
+			"linear-gradient(to right, #cc181e 0%, #cc181e " +
+				val +
+				"%, #444 " +
+				val +
+				"%, #444 100%)"
+		);
+	}
+
 	// ######################################################
 	// ############            Runner            ############
 	// ######################################################
 
 	getRecording();
+
+	// Runner Config
+	setUpTimeDividerSelector("config_chart_time");
 });

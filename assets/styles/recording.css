@@ -16,10 +16,10 @@
 
 .loader {
 	border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid #3498db;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+	border-top: 4px solid #3498db;
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
 	animation: spin 2s linear infinite;
 	-webkit-animation: spin 2s linear infinite; /* Safari */
 }
@@ -162,6 +162,7 @@ textarea.in_out {
 div.wrap_input_player {
 	display: flex;
 	flex-direction: row;
+	align-items: center;
 	gap: 8px;
 }
 
@@ -169,24 +170,63 @@ div.wrap_input_player > input {
 	flex: 1;
 }
 
-/* List Recording */
-
-div#wrap_sel_recording {
+#wrap_input_range {
+	width: 100%;
 	display: flex;
 	flex-direction: row;
-	gap: 8px;
 }
 
-div.sel_recording {
-	background: #fff;
-	border-bottom: 1px solid #dddad0;
-	border-left: 1px solid #dddad0;
-	display: flex;
-	flex-direction: column;
-	padding: 8px;
-	border-radius: 4px;
+.wrap_range {
+	width: 100%;
 }
 
-div.sel_recording > h3 {
+.range {
+	appearance: none;
+	background: #444;
+	cursor: pointer;
+	height: 8px;
 	margin: 0;
+	transition: 0.1s ease-in;
+	vertical-align: bottom;
+	width: 100%;
+	border-radius: 8px;
+	margin-bottom: 4px;
+}
+.wrap_range:hover .range,
+.wrap_range.hover .range {
+	height: 16px;
+	margin-bottom: 0px;
+}
+
+.range::-webkit-slider-thumb {
+	appearance: none;
+	background: #aeaeae;
+	border-radius: 8px;
+	box-shadow: inset 0 0 0 5px #eaeaea;
+	height: 0;
+	transition: 0.1s ease-in;
+	width: 0;
+}
+.wrap_range:hover .range::-webkit-slider-thumb,
+.wrap_range.hover .range::-webkit-slider-thumb {
+	width: 16px;
+	height: 16px;
+}
+
+/* List Recording */
+
+.sel_recording {
+	cursor: pointer;
+}
+
+.sel_selected {
+	font-weight: bold;
+	text-decoration: underline;
+}
+
+/* Chart */
+#wrap_config_chart {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: 100px 1fr;
 }
