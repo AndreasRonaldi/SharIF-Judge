@@ -21,20 +21,22 @@ $(document).ready(() => {
 
 	let confTimer = {
 		delay: 1,
-	}
+	};
 
 	let confChart = {
 		type: "bar",
+		autoDivider: 20, // How many section does the auto divider will giveout (default: 10)
 		divider: 1,
 		time: "s",
 		stack: true,
 		// fill: false,
 		// step: false,
 	};
-	
+
 	let confPlayer = {
-		durationNext: 0
-	}
+		durationNext: 500, // in ms
+		mergeDuration: 0, // if time difference smaller than value, then merge the events
+	};
 
 	editor.setOptions({
 		theme: "ace/theme/monokai",
@@ -45,12 +47,14 @@ $(document).ready(() => {
 		enableSnippets: true,
 	});
 
+	// Object for playing record
 	const recording = {
 		events: {}, // Map -> time events to list of events
 		eventsIndex: {}, // Map -> index to time events
 		indexEvents: {}, // Map -> time events to index
+		presumIndexDuration: {}, // Map -> index to duration before timestart event
 		length: -1, // Length of list of saved events
-		curIndex: -1, // Currently selected index
+		curEvents: -1, // Currently selected index
 		duration: 0, // Duration of events
 		save_state: [], // Saved state to use in playback
 
@@ -58,11 +62,29 @@ $(document).ready(() => {
 			recording.events = {};
 			recording.eventsIndex = {};
 			recording.indexEvents = {};
+			recording.presumIndexDuration = {};
 			recording.length = -1;
-			recording.curIndex = -1;
+			recording.curEvents = -1;
 			recording.duration = 0;
 			recording.save_state = [];
 		},
+	};
+
+	const handlersIncludeInGoState = {
+		insert: true,
+		remove: true,
+		cursor_selection: true,
+		sel_selection: true,
+		focus: false,
+		blur: false,
+		visibility: false,
+		pdf_focus: false,
+		pdf_blur: false,
+		input_change: true,
+		output_change: true,
+		save: false,
+		submit: false,
+		execute: false,
 	};
 
 	const handlers = {
@@ -189,7 +211,7 @@ $(document).ready(() => {
 
 				recording.length = 0;
 
-				Object.keys(data).forEach((c, i) => {
+				Object.keys(data).forEach((c, i, a) => {
 					// Push to table of saved
 					$(`<tr>
 							<td>${convTimeToEpoch(c)}</td>
@@ -199,32 +221,40 @@ $(document).ready(() => {
 							</td>
 					</tr>`).appendTo("tbody#tbody_saved");
 
-					$(`#sel_${c}`).click(() => setSelectedSaveTime(c));
+					$(`#sel_${c}`).click(() => {
+						playOrStop(true);
+						setValueTimer(recording.presumIndexDuration[i]);
+						setSelectedSaveTime(c);
+					});
 
 					recording.eventsIndex[c] = i;
 					recording.indexEvents[i] = c;
+					recording.presumIndexDuration[i] = recording.duration;
 					recording.length++;
 
 					recording.duration += data[c][data[c].length - 1].time;
 
-					if (recording.curIndex === -1) {
-						recording.curIndex = c;
-					} else {
+					// console.log(data[c][data[c].length - 1].time);
+
+					if (recording.curEvents === -1) {
+						recording.curEvents = c;
+					}
+
+					if (a.length - 1 !== i) {
 						recording.duration += confPlayer.durationNext;
 					}
 				});
 
 				// console.log(recording.duration);
 
-				$(`#range_player`).attr('max', recording.duration);
-				$(`#sel_${recording.curIndex}`).text("Selected");
-				$(`#sel_${recording.curIndex}`).addClass("sel_selected");
+				$(`#range_player`).attr("max", recording.duration);
+				$(`#sel_${recording.curEvents}`).text("Selected");
+				$(`#sel_${recording.curEvents}`).addClass("sel_selected");
 				disabledInput(false);
 				setTitle("Ready!");
 				setLoading(false);
 				setStatus("Ready!");
-				
-				setUpChart();
+				setSelectedSaveTime(recording.curEvents);
 			},
 			error: function (error) {
 				console.error(error);
@@ -232,8 +262,105 @@ $(document).ready(() => {
 		});
 	};
 
-	const playRecording = (index) => {
-		let events = recording.events[recording.curIndex];
+	const playOrStop = (stopRec = isRecPlaying) => {
+		if (stopRec) {
+			// if recording is playing -> stop
+			stop();
+			$("#rec_btn").text("Play");
+		} else {
+			// if recording is not played -> played in the time in input.
+			play($(`#range_player`).val());
+			$("#rec_btn").text("Stop");
+		}
+
+		isRecPlaying = !stopRec;
+	};
+
+	const play = (time = 0) => {
+		emptyEditor();
+
+		let left = 0;
+		let right = recording.length - 1;
+		let eventIndex = 0;
+
+		// lower bound
+		while (left <= right) {
+			let middle = left + Math.floor((right - left) / 2);
+
+			if (recording.presumIndexDuration[middle] > time) {
+				right = middle - 1;
+			} else {
+				eventIndex = middle;
+				left = middle + 1;
+			}
+		}
+
+		eventIndex = recording.indexEvents[eventIndex];
+		setSelectedSaveTime(eventIndex);
+
+		let timeEvent =
+			time - recording.presumIndexDuration[recording.eventsIndex[eventIndex]];
+		let events = recording.events[eventIndex];
+		left = 0;
+		right = events.length - 1;
+		let eventsIndex = 0;
+
+		// upper bound
+		while (left <= right) {
+			let middle = left + Math.floor((right - left) / 2);
+
+			// console.log(left, middle, right, events[middle].time, timeEvent);
+
+			if (events[middle].time <= timeEvent) {
+				left = middle + 1;
+			} else {
+				eventsIndex = middle;
+				right = middle - 1;
+			}
+		}
+
+		while (
+			eventsIndex > 0 &&
+			events[eventsIndex].time - events[eventsIndex - 1].time <=
+				confPlayer.mergeDuration
+		) {
+			eventsIndex--;
+		}
+
+		handlerForLast = {};
+
+		// from index 0 of selected save time to eventsIndex, run all insert and remove
+		for (let index = 0; index < eventsIndex; index++) {
+			const event = events[index];
+			if (handlersIncludeInGoState[event.event]) {
+				handlers[event.event](event.args);
+			} else {
+				handlerForLast[event.event] = () => handlers[event.event](event.args);
+			}
+		}
+
+		Object.values(handlerForLast).forEach((f) => {
+			f();
+		});
+
+		startTimer();
+
+		// console.log(timeEvent, eventsIndex, events[eventsIndex]);
+
+		// Start after time to eventsIndex
+		if (events[eventsIndex].time < timeEvent)
+			funcTimeoutRecording = setTimeout(() => {
+				startRecording(eventsIndex);
+			}, timeEvent - events[eventsIndex].time);
+		else
+			funcTimeoutRecording = setTimeout(() => {
+				startRecording(eventsIndex);
+			}, events[eventsIndex].time - timeEvent);
+	};
+
+	// Methods for plays
+	const startRecording = (index) => {
+		let events = recording.events[recording.curEvents];
 		if (index >= events.length) {
 			if (playNextRecording()) {
 				setStatus("Playing Next");
@@ -242,61 +369,74 @@ $(document).ready(() => {
 			} else {
 				setStatus("Finish...");
 				setTitle("Finish...");
+				playOrStop(true);
 				return;
 			}
 		}
 
 		let event = events[index];
-		let timeDiff = event.time - (index - 1 < 0 ? 0 : events[index - 1].time);
+		let timeDiff =
+			(index + 1 < events.length
+				? events[index + 1].time
+				: events[index].time) - event.time;
 
 		handlers[event.event](event.args);
-		// console.log(timeDiff, events[index]);
-		// setStatus(true, event.event);
 
-		while (timeDiff <= 0) {
+		while (index + 1 < events.length && timeDiff <= confPlayer.mergeDuration) {
 			index++;
 			event = events[index];
-			timeDiff = event.time - events[index - 1].time;
+			timeDiff = events[index + 1].time - event.time;
 			handlers[event.event](event.args);
 		}
 
+		// $(`#range_player`).val(recording.presumIndexDuration[recording.eventsIndex[recording.curEvents]] + event.time);
+
 		funcTimeoutRecording = setTimeout(() => {
-			playRecording(index + 1);
+			startRecording(index + 1);
 		}, timeDiff);
 	};
 
-	const startTimer = (time) => {
+	const startTimer = () => {
+		let offset = 0;
+
+		function delta() {
+			var now = Date.now(),
+				d = now - offset;
+
+			offset = now;
+			return d;
+		}
+
 		const update = () => {
 			let val = parseInt($(`#range_player`).val());
-			// console.log("start", val);
-			val += 1;
-			// console.log("update", val);
+			val += delta();
 			$(`#range_player`).val(val);
 			updateTimerRange();
-		}
+		};
 
 		if (!funcIntervalTimer) {
-			funcIntervalTimer = setInterval(
-				update,
-				confTimer.delay,
-			);
+			offset = Date.now();
+			funcIntervalTimer = setInterval(update, confTimer.delay);
 		}
-	}
+	};
 
 	const playNextRecording = () => {
-		if (recording.eventsIndex[recording.curIndex] < recording.length - 1) {
+		if (recording.eventsIndex[recording.curEvents] < recording.length - 1) {
 			// play next saved in 1 sec
 			// recording.curIndex =
 			// 	recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
 
 			setSelectedSaveTime(
-				recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1],
+				recording.indexEvents[recording.eventsIndex[recording.curEvents] + 1],
 				false
 			);
 
 			funcTimeoutRecording = setTimeout(() => {
 				emptyEditor();
-				playRecording(0);
+
+				funcTimeoutRecording = setTimeout(() => {
+					startRecording(0);
+				}, recording.events[recording.curEvents][0].time);
 			}, confPlayer.durationNext);
 
 			return true;
@@ -305,12 +445,20 @@ $(document).ready(() => {
 		return false;
 	};
 
+	const stop = () => {
+		stopTimer();
+		stopRecording();
+	};
+
+	// Methods for stop
 	const stopTimer = () => {
 		clearTimeout(funcIntervalTimer);
-	}
+		funcIntervalTimer = null;
+	};
 
 	const stopRecording = () => {
 		clearTimeout(funcTimeoutRecording);
+		funcTimeoutRecording = null;
 	};
 
 	// ######################################################
@@ -318,7 +466,7 @@ $(document).ready(() => {
 	// ######################################################
 
 	const setUpChart = (
-		index = recording.curIndex,
+		index = recording.curEvents,
 		type = confChart.type ? confChart.type : "bar",
 		divider = confChart.divider ? confChart.divider : 1,
 		time = confChart.time ? confChart.time : "s",
@@ -326,7 +474,6 @@ $(document).ready(() => {
 		step = confChart.step != undefined ? confChart.step : false,
 		fill = confChart.fill != undefined ? confChart.fill : false
 	) => {
-		console.log(stack);
 		if (curChart != null) curChart.destroy();
 
 		let times = calcTimeForChart(recording.events[index], divider, time);
@@ -399,7 +546,6 @@ $(document).ready(() => {
 		let dev = calcTimeToMilliSec(divider, time);
 		let max = arrEvent[arrEvent.length - 1].time;
 		let i = 1;
-		// console.log(dev);
 
 		for (; dev * i < max; i++) {
 			res.push({
@@ -430,7 +576,6 @@ $(document).ready(() => {
 
 	const setUpTimeDividerSelector = (selectID) => {
 		Object.keys(mult).forEach((c) => {
-			console.log();
 			$(`
 				<option value="${c}">
 					${c}
@@ -458,7 +603,6 @@ $(document).ready(() => {
 	$("#config_chart_divider").on("input", (e) => {
 		let val = $("#config_chart_divider").val();
 		if (val > 0) {
-			console.log("Change divider to", val);
 			confChart.divider = val;
 			setUpChart();
 		}
@@ -466,7 +610,6 @@ $(document).ready(() => {
 
 	$("#config_chart_time").on("change", (e) => {
 		let val = $("#config_chart_time").val();
-		console.log("Change time to", val);
 		confChart.time = val;
 		setUpChart();
 	});
@@ -476,28 +619,18 @@ $(document).ready(() => {
 	// ######################################################
 
 	$("#rec_btn").click(() => {
-		if (isRecPlaying) {
-			// if recording is playing -> stop
-			stopTimer();
-			stopRecording();
-			$("#rec_btn").text("Play");
-		} else {
-			// if recording is not played -> played in the time in input.
-			emptyEditor();
-			let firstIndex = recording.events[recording.curIndex].findIndex(
-				(c) => c.time > 0
-			);
-
-			startTimer();
-			playRecording(firstIndex);
-			$("#rec_btn").text("Stop");
-		}
-
-		isRecPlaying = !isRecPlaying;
+		playOrStop();
 	});
 
-	$("#range_player").on("change mousemove", function () {
+	$("#range_player").on("mousemove", function () {
 		updateTimerRange();
+	});
+
+	$("#range_player").on("change", function () {
+		let isPlaying = isRecPlaying;
+		if (isPlaying) playOrStop(true);
+		updateTimerRange();
+		if (isPlaying) playOrStop(false);
 	});
 
 	// ######################################################
@@ -552,10 +685,13 @@ $(document).ready(() => {
 			"-" +
 			day +
 			" " +
+			(hours < 10 ? "0" : "") +
 			hours +
 			":" +
+			(minutes < 10 ? "0" : "") +
 			minutes +
 			":" +
+			(seconds < 10 ? "0" : "") +
 			seconds
 		);
 	};
@@ -565,17 +701,26 @@ $(document).ready(() => {
 	};
 
 	const setSelectedSaveTime = (time, stop = true) => {
-		if (time == recording.curIndex) return;
+		// if (time == recording.curIndex) return;
 
-		if (stop) stopRecording();
-		$(`#sel_${recording.curIndex}`).text("Select");
-		$(`#sel_${recording.curIndex}`).removeClass("sel_selected");
+		if (stop) playOrStop(true);
+		$(`#sel_${recording.curEvents}`).text("Select");
+		$(`#sel_${recording.curEvents}`).removeClass("sel_selected");
 
-		recording.curIndex = time;
+		recording.curEvents = time;
 		$(`#sel_${time}`).text("Selected");
 		$(`#sel_${time}`).addClass("sel_selected");
 
-		setUpChart(time);
+		let duration =
+			recording.events[time][recording.events[time].length - 1].time;
+
+		let divider = (duration / confChart.autoDivider / 1000).toFixed(2);
+		let times = "s";
+
+		$(`#config_chart_divider`).val(divider);
+		$(`#config_chart_time`).val(times);
+
+		setUpChart(time, confChart.type, divider, times);
 	};
 
 	const setStatus = (text = "...") => {
@@ -599,17 +744,31 @@ $(document).ready(() => {
 		}
 	};
 
-	const updateTimerRange = (idRange = "#range_player", idSpan = `#timer_player`) => {
+	const setValueTimer = (value) => {
+		$(`#range_player`).val(value);
+		updateTimerRange();
+	};
+
+	const updateTimerRange = (
+		idRange = "#range_player",
+		idSpan = `#timer_player`
+	) => {
 		const val = ($(idRange).val() / recording.duration) * 100;
 		const ms = $(idRange).val();
 
 		let seconds = ms / 1000;
-		const hours = parseInt( seconds / 3600 ).toFixed(0); 
-		seconds = seconds % 3600; 
-		const minutes = parseInt( seconds / 60 ).toFixed(0);
+		const hours = parseInt(seconds / 3600).toFixed(0);
+		seconds = seconds % 3600;
+		const minutes = parseInt(seconds / 60).toFixed(0);
 		seconds = (seconds % 60).toFixed(0);
 
-		const valTime = (hours > 0 ? (hours < 10 ? '0' : '') + hours + ":" : "") + (minutes < 10 ? '0' : '') + minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+		const valTime =
+			(hours > 0 ? (hours < 10 ? "0" : "") + hours + ":" : "") +
+			(minutes < 10 ? "0" : "") +
+			minutes +
+			":" +
+			(seconds < 10 ? "0" : "") +
+			seconds;
 
 		$(idSpan).text(valTime);
 
@@ -621,7 +780,7 @@ $(document).ready(() => {
 				val +
 				"%, #444 100%)"
 		);
-	}
+	};
 
 	// ######################################################
 	// ############            Runner            ############
