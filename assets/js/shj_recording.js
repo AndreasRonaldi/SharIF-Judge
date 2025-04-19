@@ -240,9 +240,7 @@ $(document).ready(() => {
 						recording.curEvents = c;
 					}
 
-					if (a.length - 1 !== i) {
-						recording.duration += confPlayer.durationNext;
-					}
+					recording.duration += confPlayer.durationNext;
 				});
 
 				// console.log(recording.duration);
@@ -303,7 +301,7 @@ $(document).ready(() => {
 		let events = recording.events[eventIndex];
 		left = 0;
 		right = events.length - 1;
-		let eventsIndex = 0;
+		let eventsIndex = events.length - 1;
 
 		// upper bound
 		while (left <= right) {
@@ -311,7 +309,7 @@ $(document).ready(() => {
 
 			// console.log(left, middle, right, events[middle].time, timeEvent);
 
-			if (events[middle].time <= timeEvent) {
+			if (events[middle].time < timeEvent) {
 				left = middle + 1;
 			} else {
 				eventsIndex = middle;
@@ -334,18 +332,19 @@ $(document).ready(() => {
 			const event = events[index];
 			if (handlersIncludeInGoState[event.event]) {
 				handlers[event.event](event.args);
-			} else {
+			} else if (events[eventsIndex] - event.time <= confPlayer.mergeDuration) {
 				handlerForLast[event.event] = () => handlers[event.event](event.args);
 			}
 		}
 
+		// Run all handler that set to false the last handler that the event is
 		Object.values(handlerForLast).forEach((f) => {
 			f();
 		});
 
 		startTimer();
 
-		// console.log(timeEvent, eventsIndex, events[eventsIndex]);
+		console.log(timeEvent, eventsIndex, events[eventsIndex]);
 
 		// Start after time to eventsIndex
 		if (events[eventsIndex].time < timeEvent)
@@ -367,9 +366,11 @@ $(document).ready(() => {
 				setTitle("Playing Next");
 				return;
 			} else {
-				setStatus("Finish...");
-				setTitle("Finish...");
-				playOrStop(true);
+				funcTimeoutRecording = setTimeout(() => {
+					setStatus("Finish...");
+					setTitle("Finish...");
+					playOrStop(true);
+				}, confPlayer.durationNext);
 				return;
 			}
 		}
@@ -441,7 +442,7 @@ $(document).ready(() => {
 
 			return true;
 		}
-
+		funcTimeoutRecording = setTimeout(() => {}, confPlayer.durationNext);
 		return false;
 	};
 
@@ -540,6 +541,7 @@ $(document).ready(() => {
 		return res;
 	};
 
+	// TODO: Fix label for this
 	const calcTimeForChart = (arrEvent, divider, time) => {
 		let res = [];
 
@@ -550,12 +552,14 @@ $(document).ready(() => {
 		for (; dev * i < max; i++) {
 			res.push({
 				time: Math.floor(divider * i * 100) / 100 + time,
+				// time: convTimeToHHMMSS(dev * i, false, true),
 				ms: dev * i,
 			});
 		}
 
 		res.push({
 			time: Math.floor(divider * i * 100) / 100 + time,
+			// time: convTimeToHHMMSS(dev * i, false, true),
 			ms: dev * i,
 		});
 
@@ -696,6 +700,30 @@ $(document).ready(() => {
 		);
 	};
 
+	const convTimeToHHMMSS = (ms, showZero = true, showMS = false) => {
+		console.log(ms);
+
+		let seconds = ms / 1000;
+		const hours = parseInt(seconds / 3600).toFixed(0);
+		seconds = seconds % 3600;
+		const minutes = parseInt(seconds / 60).toFixed(0);
+		seconds = (seconds % 60).toFixed(0);
+		const sec = parseInt(seconds / 60).toFixed(0);
+		ms = (seconds % 60).toFixed(0);
+
+		console.log(ms, hours, minutes, sec);
+
+		return (
+			(hours > 0 ? (hours < 10 ? "0" : "") + hours + ":" : "") +
+			(showZero || minutes > 0
+				? (minutes < 10 ? "0" : "") + minutes + ":"
+				: "") +
+			(seconds < 10 ? "0" : "") +
+			seconds +
+			(showMS ? ms : "")
+		);
+	};
+
 	const setTitle = (title) => {
 		$("#status_rec").text(title);
 	};
@@ -756,21 +784,7 @@ $(document).ready(() => {
 		const val = ($(idRange).val() / recording.duration) * 100;
 		const ms = $(idRange).val();
 
-		let seconds = ms / 1000;
-		const hours = parseInt(seconds / 3600).toFixed(0);
-		seconds = seconds % 3600;
-		const minutes = parseInt(seconds / 60).toFixed(0);
-		seconds = (seconds % 60).toFixed(0);
-
-		const valTime =
-			(hours > 0 ? (hours < 10 ? "0" : "") + hours + ":" : "") +
-			(minutes < 10 ? "0" : "") +
-			minutes +
-			":" +
-			(seconds < 10 ? "0" : "") +
-			seconds;
-
-		$(idSpan).text(valTime);
+		$(idSpan).text(convTimeToHHMMSS(ms));
 
 		$(idRange).css(
 			"background",
