@@ -9,6 +9,9 @@ int main() {
 	string inpath = "../testcase/p3/in/";
 	string outpath = "../testcase/p3/out/";
 
+	filesystem::remove_all(inpath);
+	filesystem::remove_all(outpath);
+
 	filesystem::create_directories(inpath);
 	filesystem::create_directories(outpath);
 	ifstream Input("easy.txt");

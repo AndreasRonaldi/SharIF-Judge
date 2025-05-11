@@ -17,6 +17,9 @@ int main() {
 	// string inpath = "./p2/in/";
 	// string outpath = "./p2/out/";
 
+	filesystem::remove_all(inpath);
+	filesystem::remove_all(outpath);
+
 	filesystem::create_directories(inpath);
 	filesystem::create_directories(outpath);
 	ifstream Input("med.txt");
