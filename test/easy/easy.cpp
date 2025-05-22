@@ -6,8 +6,8 @@
 using namespace std;
 
 int main() {
-	string inpath = "../testcase/p3/in/";
-	string outpath = "../testcase/p3/out/";
+	string inpath = "../testcase/p1/in/";
+	string outpath = "../testcase/p1/out/";
 
 	filesystem::remove_all(inpath);
 	filesystem::remove_all(outpath);

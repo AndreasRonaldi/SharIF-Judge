@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <regex>
+#include <algorithm>
 
 using namespace std;
 
@@ -44,12 +45,14 @@ int main() {
 
 		ofstream In(inpathfile);
 		ofstream Out(outpathfile);
+		int comma_count = count(strInput.begin(), strInput.end(), ',') + 1;
 		
 		string temp = do_replace(strInput, ",", " ");
 		temp.erase(0, 1);
 		temp.erase(temp.size() - 1);
 
-		In << temp;
+		In << comma_count << "\n" << temp;
+		// In << temp;
 		Out << strOutput;
 		In.close();
 		Out.close();
