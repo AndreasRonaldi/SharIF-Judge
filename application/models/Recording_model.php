@@ -22,9 +22,7 @@ class Recording_model extends CI_Model
 			$arr['username'] = $filter_user;
 
 		return $this->db
-		// ->distinct()
-			// ->group_by('username')
-			->order_by('username asc')
+			->order_by('upload_at asc')
 			->get_where('recording', $arr)
 			->result_array();
 	}
@@ -40,12 +38,16 @@ class Recording_model extends CI_Model
 			->result_array();
 	}
 
-	// TODO: Handle When duplicated save file (rec_id is 0)
 	public function add_recording($rec_info) {
 		$this->db->replace('recording', $rec_info);
 	}
 
-	public function remove_save_only_recording($assignment_id, $problem_id, $username) {
-		// TODO: Create this function
+	public function remove_saveonly_recording($assignment_id, $problem_id, $username) {
+		$this->db->delete('recording', array(
+			'assignment' => $assignment_id, 
+			'problem'=>$problem_id, 
+			'username'=>$username, 
+			'rec_id'=>0)
+		);
 	}
 }

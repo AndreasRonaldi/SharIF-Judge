@@ -57,7 +57,7 @@ class Recording extends CI_Controller
 			'filter_user' => $this->filter_user,
 		);
 
-		$this->twig->display('pages/recording_user.twig', $data);
+		$this->twig->display('pages/recording_list.twig', $data);
 	}
 
 	// TODO: Fix this up pls

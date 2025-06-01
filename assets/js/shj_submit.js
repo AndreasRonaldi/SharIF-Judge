@@ -306,7 +306,7 @@ $(document).ready(function () {
 		// startValue: "",
 		// startSelection: [],
 
-		reset: () => {
+		init: () => {
 			recording.events = [];
 			recording.startTime = Date.now();
 			// recording.startValue = editor.getValue();
@@ -332,7 +332,7 @@ $(document).ready(function () {
 	const handlers = {
 		// ######### Editor Event #########
 		// Detected Every Command that executed in editor
-		editor_exec: (e) =>
+		editor_change: (e) =>
 			recordEvent(e.action, {
 				data: e.lines,
 				start: e.start,
@@ -424,7 +424,7 @@ $(document).ready(function () {
 	};
 
 	const addListener = {
-		editor_exec: () => editor.session.on("change", handlers.editor_exec),
+		editor_change: () => editor.session.on("change", handlers.editor_change),
 		editor_cursor: () =>
 			editor.session.selection.on("changeCursor", handlers.editor_cursor),
 		editor_selection: () =>
@@ -453,7 +453,7 @@ $(document).ready(function () {
 	};
 
 	const removeListener = {
-		editor_exec: () => editor.commands.off("afterExec", handlers.editor_exec),
+		editor_change: () => editor.commands.off("afterExec", handlers.editor_change),
 		editor_cursor: () =>
 			editor.selection.off("changeCursor", handlers.editor_cursor),
 		editor_selection: () =>
@@ -494,7 +494,7 @@ $(document).ready(function () {
 			recording.startSelection = getSelection(editor);
 
 			// Exec command
-			addListener.editor_exec();
+			addListener.editor_change();
 
 			// For Cursor
 			addListener.editor_cursor();
@@ -553,17 +553,12 @@ $(document).ready(function () {
 		output: () => {
 			addListener.output_change();
 		},
-		// Action Button
-		// action: () => {
-		// 	addListener.save();
-		// 	addListener.submit();
-		// 	addListener.execute();
-		// },
+		// Action Button added in the onclick event listener.
 	};
 
 	// Methods to start recording.
 	const recordStart = () => {
-		recording.reset();
+		recording.init();
 
 		// for (let index = 0; index < 400; index++) {
 		// 	recordEvent("test");
@@ -658,58 +653,58 @@ $(document).ready(function () {
 
 	// --- EXPERIMENT ---
 
-	const toStringCmd = (x) => {
-		var str = "";
-		var data = x.data;
-		switch (x.type) {
-			case "exec":
-				str =
-					'editor.execCommand("' +
-					data.command.name +
-					(data.args ? '", ' + JSON.stringify(data.args) : '"') +
-					")";
-				break;
-			case "setSelection":
-				str = "setSelection(editor, " + JSON.stringify(data) + ")";
-				break;
-			case "setValue":
-				if (lastValue != data) {
-					lastValue = data;
-					str = "editor.setValue(" + JSON.stringify(data) + ", -1)";
-				} else {
-					return;
-				}
-				break;
-			case "selection":
-				str = "testSelection(editor, " + JSON.stringify(data) + ")";
-				break;
-			case "value":
-				if (lastValue != data) {
-					lastValue = data;
-					str = "testValue(editor, " + JSON.stringify(data) + ")";
-				} else {
-					return;
-				}
-				break;
-		}
-		return str + (x.source ? " // " + x.source : "");
-	};
+	// const toStringCmd = (x) => {
+	// 	var str = "";
+	// 	var data = x.data;
+	// 	switch (x.type) {
+	// 		case "exec":
+	// 			str =
+	// 				'editor.execCommand("' +
+	// 				data.command.name +
+	// 				(data.args ? '", ' + JSON.stringify(data.args) : '"') +
+	// 				")";
+	// 			break;
+	// 		case "setSelection":
+	// 			str = "setSelection(editor, " + JSON.stringify(data) + ")";
+	// 			break;
+	// 		case "setValue":
+	// 			if (lastValue != data) {
+	// 				lastValue = data;
+	// 				str = "editor.setValue(" + JSON.stringify(data) + ", -1)";
+	// 			} else {
+	// 				return;
+	// 			}
+	// 			break;
+	// 		case "selection":
+	// 			str = "testSelection(editor, " + JSON.stringify(data) + ")";
+	// 			break;
+	// 		case "value":
+	// 			if (lastValue != data) {
+	// 				lastValue = data;
+	// 				str = "testValue(editor, " + JSON.stringify(data) + ")";
+	// 			} else {
+	// 				return;
+	// 			}
+	// 			break;
+	// 	}
+	// 	return str + (x.source ? " // " + x.source : "");
+	// };
 
-	function download(filename, text) {
-		var element = document.createElement("a");
-		element.setAttribute(
-			"href",
-			"data:text/plain;charset=utf-8," + encodeURIComponent(text)
-		);
-		element.setAttribute("download", filename);
+	// function download(filename, text) {
+	// 	var element = document.createElement("a");
+	// 	element.setAttribute(
+	// 		"href",
+	// 		"data:text/plain;charset=utf-8," + encodeURIComponent(text)
+	// 	);
+	// 	element.setAttribute("download", filename);
 
-		element.style.display = "none";
-		document.body.appendChild(element);
+	// 	element.style.display = "none";
+	// 	document.body.appendChild(element);
 
-		element.click();
+	// 	element.click();
 
-		document.body.removeChild(element);
-	}
+	// 	document.body.removeChild(element);
+	// }
 
 	// let Root = protobuf.Root,
 	// 	Type = protobuf.Type,

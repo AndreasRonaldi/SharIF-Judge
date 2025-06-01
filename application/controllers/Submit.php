@@ -358,7 +358,6 @@ class Submit extends CI_Controller
 
 			$response = json_encode(array('status'=>TRUE, 'message'=>'Saved'));
 
-			// TODO: Add to database?
 			$this->load->model('recording_model');
 			$this->recording_model->add_recording(array(
 				'rec_id' 		=> 0,
@@ -469,6 +468,7 @@ class Submit extends CI_Controller
 				'problem' 		=> $submit_info['problem'],
 				'upload_at'		=> shj_now_str(),
 			));
+			$this->recording_model->remove_saveonly_recording($submit_info['assignment'], $submit_info['problem'], $submit_info['username']);
 
 			if ($this->problem['is_upload_only'] == 0)
 			{
