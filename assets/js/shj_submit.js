@@ -39,7 +39,6 @@ $(document).ready(function () {
 				cache: false,
 				success: function (data) {
 					data = JSON.parse(data);
-					// console.log(data);
 					editor.setValue(data.content);
 					$("#ajax_status").html(data.message);
 				},
@@ -62,7 +61,6 @@ $(document).ready(function () {
 
 		const funcLoad = async (data) => {
 			data = JSON.parse(data);
-			// console.log(data);
 
 			if (data.content.trim() === "") {
 				canItBeDisabled();
@@ -129,18 +127,6 @@ $(document).ready(function () {
 	$("#editor_save").click(function () {
 		disableEditor(true);
 		handlers.save();
-		// let rec = { ...recording };
-		// rec.reset = "";
-
-		console.log(getCurrentTime());
-
-		// let fd = new FormData();
-		// fd.append("shj_csrf_token", shj.csrf_token);
-		// fd.append("code_editor", editor.getValue());
-		// fd.append("problem_id", $("select#problems").val());
-		// fd.append("language", $("select#languages").val());
-		// fd.append("rec", JSON.stringify(rec));
-		// fd.append('buffer', blob, 'rec.bin');
 
 		$.ajax({
 			type: "POST",
@@ -154,18 +140,10 @@ $(document).ready(function () {
 					...befRecording,
 					[recording.startTime]: recording.events
 				}),
-				// rec_start: convTimeToEpoch(recording.startTime),
-				// rec_end: convTimeToEpoch(recording.startTime + recording.events[recording.events.length - 1].time),
 			},
-			// processData: false,
-			// contentType: false,
 			cache: false,
 			success: function (data) {
 				data = JSON.parse(data);
-
-				// console.log(JSON.parse(data["test"]));
-				// console.log(getCurrentTime());
-				// console.log(data['test']);
 
 				$("#ajax_status").html(data.message);
 				disableEditor(false);
@@ -180,7 +158,6 @@ $(document).ready(function () {
 	$("#editor_submit").click(function () {
 		disableEditor(true);
 		handlers.submit();
-		// let rec = { ...recording };
 
 		$.ajax({
 			type: "POST",
@@ -194,9 +171,6 @@ $(document).ready(function () {
 					...befRecording,
 					[recording.startTime]: recording.events
 				}),
-				// rec_data: JSON.stringify(rec),
-				// rec_start: convTimeToEpoch(rec.startTime),
-				// rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
 			},
 			cache: false,
 			success: function (data) {
@@ -219,7 +193,6 @@ $(document).ready(function () {
 	$("#editor_execute").click(function () {
 		disableEditor(true);
 		handlers.execute();
-		// let rec = { ...recording };
 
 		$.ajax({
 			type: "POST",
@@ -234,9 +207,6 @@ $(document).ready(function () {
 					...befRecording,
 					[recording.startTime]: recording.events
 				}),
-				// rec_data: JSON.stringify(rec),
-				// rec_start: convTimeToEpoch(rec.startTime),
-				// rec_end: convTimeToEpoch(rec.startTime + rec.events[rec.events.length - 1].time),
 			},
 			cache: false,
 			success: function (data) {
@@ -303,14 +273,10 @@ $(document).ready(function () {
 	const recording = {
 		events: [],
 		startTime: -1,
-		// startValue: "",
-		// startSelection: [],
 
 		init: () => {
 			recording.events = [];
 			recording.startTime = Date.now();
-			// recording.startValue = editor.getValue();
-			// recording.startSelection = getSelection(editor);
 		},
 	};
 
@@ -391,7 +357,6 @@ $(document).ready(function () {
 				removeListener.pdf_blur();
 			}
 
-			// console.log("change visibility:", !document[hidden], getCurrentTime());
 			recordEvent("visibility", isVisible);
 		},
 
@@ -447,9 +412,6 @@ $(document).ready(function () {
 		input_change: () => $("#editor_input").on("input", handlers.input_change),
 		output_change: () =>
 			$("textarea#editor_output").on("output_change", handlers.output_change),
-		// save: () => $("#editor_save").on("click", handlers.save),
-		// submit: () => $("#editor_submit").on("click", handlers.submit),
-		// execute: () => $("#editor_execute").on("click", handlers.execute),
 	};
 
 	const removeListener = {
@@ -477,9 +439,6 @@ $(document).ready(function () {
 		input_change: () => $("#editor_input").off("input", handlers.input_change),
 		output_change: () =>
 			$("textarea#editor_output").off("output_change", handlers.output_change),
-		// save: () => $("#editor_save").off("click", handlers.save),
-		// submit: () => $("#editor_submit").off("click", handlers.submit),
-		// execute: () => $("#editor_execute").off("click", handlers.execute),
 	};
 
 	// ######################################################
@@ -503,7 +462,6 @@ $(document).ready(function () {
 		// Overall page/tabs
 		web: () => {
 			// ####### Web Page #######
-			// Get from https://stackoverflow.com/questions/1060008/is-there-a-way-to-detect-if-a-browser-window-is-not-currently-active
 
 			// for every type of browser.
 			if (hidden in document) {
@@ -584,7 +542,6 @@ $(document).ready(function () {
 
 	// Method to record listener.
 	const recordEvent = (event, args) => {
-		// TODO: Recording
 		let curTime = getCurrentTime();
 
 		recording.events.push({
@@ -593,7 +550,6 @@ $(document).ready(function () {
 			args,
 		});
 
-		console.log(curTime + "ms", event, args);
 	};
 
 	const addEvent = (obj, evType, fn, isCapturing) => {
@@ -648,8 +604,6 @@ $(document).ready(function () {
 	const getCurrentTime = () => {
 		return Date.now() - recording.startTime;
 	};
-
-	// console.log(convTimeToEpoch(Date.now()))
 
 	// --- EXPERIMENT ---
 

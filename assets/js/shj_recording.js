@@ -29,8 +29,6 @@ $(document).ready(() => {
 		divider: 1,
 		time: "s",
 		stack: true,
-		// fill: false,
-		// step: false,
 	};
 
 	let confPlayer = {
@@ -89,9 +87,6 @@ $(document).ready(() => {
 
 	const handlers = {
 		insert: (args) => {
-			// console.log([args.start.row, args.start.column]);
-			// console.log("Testing: ", JSON.stringify(args.data.join("\n")), ".");
-			// setSelection(editor, [args.start.row, args.start.column]);
 			editor.session.replace(
 				new ace.Range(
 					args.start.row,
@@ -101,14 +96,6 @@ $(document).ready(() => {
 				),
 				args.data.join("\n")
 			);
-			// editor.selection.fromJSON({ start: args.start, end: args.start });
-			// editor.insert(args.data.join(".\n."), -1);
-			// editor.execCommand("insertstring", "a");
-			// editor.session.insert("a");
-			// editor.session.insert(
-			// 	{ row: args.start.row, column: args.start.column },
-			// 	args.data
-			// ),
 		},
 		remove: (args) => {
 			editor.session.remove({ start: args.start, end: args.end });
@@ -197,14 +184,11 @@ $(document).ready(() => {
 		recording.reset();
 		emptyEditor();
 
-		console.log("GETTING recording/download_record/" + rec_path);
-
 		$.ajax({
 			type: "GET",
 			url: shj.site_url + "recording/download_record/" + rec_path,
 			cache: false,
 			success: (data) => {
-				console.log(data);
 				recording.events = data;
 
 				$("select#rec_selection").empty();
@@ -234,16 +218,12 @@ $(document).ready(() => {
 
 					recording.duration += data[c][data[c].length - 1].time;
 
-					// console.log(data[c][data[c].length - 1].time);
-
 					if (recording.curEvents === -1) {
 						recording.curEvents = c;
 					}
 
 					recording.duration += confPlayer.durationNext;
 				});
-
-				// console.log(recording.duration);
 
 				$(`#range_player`).attr("max", recording.duration);
 				$(`#sel_${recording.curEvents}`).text("Selected");
@@ -256,6 +236,7 @@ $(document).ready(() => {
 			},
 			error: function (error) {
 				console.error(error);
+				setTitle("Error")
 			},
 		});
 	};
@@ -307,8 +288,6 @@ $(document).ready(() => {
 		while (left <= right) {
 			let middle = left + Math.floor((right - left) / 2);
 
-			// console.log(left, middle, right, events[middle].time, timeEvent);
-
 			if (events[middle].time < timeEvent) {
 				left = middle + 1;
 			} else {
@@ -344,8 +323,6 @@ $(document).ready(() => {
 
 		startTimer();
 
-		console.log(timeEvent, eventsIndex, events[eventsIndex]);
-
 		// Start after time to eventsIndex
 		if (events[eventsIndex].time < timeEvent)
 			funcTimeoutRecording = setTimeout(() => {
@@ -362,8 +339,8 @@ $(document).ready(() => {
 		let events = recording.events[recording.curEvents];
 		if (index >= events.length) {
 			if (playNextRecording()) {
-				setStatus("Playing Next");
-				setTitle("Playing Next");
+				setStatus("Playing Next Session");
+				setTitle("Playing Next Session");
 				return;
 			} else {
 				funcTimeoutRecording = setTimeout(() => {
@@ -389,8 +366,6 @@ $(document).ready(() => {
 			timeDiff = events[index + 1].time - event.time;
 			handlers[event.event](event.args);
 		}
-
-		// $(`#range_player`).val(recording.presumIndexDuration[recording.eventsIndex[recording.curEvents]] + event.time);
 
 		funcTimeoutRecording = setTimeout(() => {
 			startRecording(index + 1);
@@ -423,10 +398,6 @@ $(document).ready(() => {
 
 	const playNextRecording = () => {
 		if (recording.eventsIndex[recording.curEvents] < recording.length - 1) {
-			// play next saved in 1 sec
-			// recording.curIndex =
-			// 	recording.indexEvents[recording.eventsIndex[recording.curIndex] + 1];
-
 			setSelectedSaveTime(
 				recording.indexEvents[recording.eventsIndex[recording.curEvents] + 1],
 				false
@@ -541,7 +512,6 @@ $(document).ready(() => {
 		return res;
 	};
 
-	// TODO: Fix label for this
 	const calcTimeForChart = (arrEvent, divider, time) => {
 		let res = [];
 
@@ -552,14 +522,12 @@ $(document).ready(() => {
 		for (; dev * i < max; i++) {
 			res.push({
 				time: Math.floor(divider * i * 100) / 100 + time,
-				// time: convTimeToHHMMSS(dev * i, false, true),
 				ms: dev * i,
 			});
 		}
 
 		res.push({
 			time: Math.floor(divider * i * 100) / 100 + time,
-			// time: convTimeToHHMMSS(dev * i, false, true),
 			ms: dev * i,
 		});
 
@@ -671,7 +639,6 @@ $(document).ready(() => {
 	};
 
 	// Convert Timestamp to Epoch
-	// https://stackoverflow.com/questions/10535782/how-can-i-convert-a-date-in-epoch-to-y-m-d-his-in-javascript
 	const convTimeToEpoch = (timestamp) => {
 		var date = new Date(parseInt(timestamp));
 
@@ -729,8 +696,6 @@ $(document).ready(() => {
 	};
 
 	const setSelectedSaveTime = (time, stop = true) => {
-		// if (time == recording.curIndex) return;
-
 		if (stop) playOrStop(true);
 		$(`#sel_${recording.curEvents}`).text("Select");
 		$(`#sel_${recording.curEvents}`).removeClass("sel_selected");
