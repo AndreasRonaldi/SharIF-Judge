@@ -421,7 +421,7 @@ class Submit extends CI_Controller
 	/**
 	 * Add code to queue for judging
 	 */
-	private function _submit($data, $problem_id, $language, $user_dir, $rec){
+	private function _submit($data, $problem_id, $language, $user_dir){
 		$file_type = $this->_language_to_type(strtolower(trim($language)));
 		$file_ext = $this->_language_to_ext(strtolower(trim($language)));
 		$file_name = EDITOR_FILE_NAME;
