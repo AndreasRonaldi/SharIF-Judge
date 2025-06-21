@@ -7,6 +7,9 @@
  */
 
 $(document).ready(() => {
+	// Check if recording data is avaliable, if not just dont run anything...
+	if (document.querySelector("#code_editor") === null) return;
+
 	// ######################################################
 	// ############           Variable           ############
 	// ######################################################
@@ -21,14 +24,6 @@ $(document).ready(() => {
 
 	let confTimer = {
 		delay: 1,
-	};
-
-	let confChart = {
-		type: "bar",
-		autoDivider: 20, // How many section does the auto divider will giveout (default: 10)
-		divider: 1,
-		time: "s",
-		stack: true,
 	};
 
 	let confPlayer = {
@@ -68,23 +63,25 @@ $(document).ready(() => {
 		},
 	};
 
+	// handle that will all be run of it when setState instead of the last handlers
 	const handlersIncludeInGoState = {
 		insert: true,
 		remove: true,
-		cursor_selection: true,
-		sel_selection: true,
+		cursor_selection: false,
+		sel_selection: false,
 		focus: false,
 		blur: false,
 		visibility: false,
 		pdf_focus: false,
 		pdf_blur: false,
-		input_change: true,
-		output_change: true,
+		input_change: false,
+		output_change: false,
 		save: false,
 		submit: false,
 		execute: false,
 	};
 
+	// handler when event is trigger
 	const handlers = {
 		insert: (args) => {
 			editor.session.replace(
@@ -147,6 +144,33 @@ $(document).ready(() => {
 		},
 	};
 
+	// Chart config
+	let confChart = {
+		type: "bar",
+		autoDivider: 20, // How many section does the auto divider will giveout (default: 10)
+		divider: 1,
+		time: "s",
+		stack: true,
+		border: "#595959",
+	};
+
+	const showInChart = {
+		insert: true,
+		remove: true,
+		cursor_selection: false,
+		sel_selection: false,
+		focus: true,
+		blur: true,
+		visibility: false,
+		pdf_focus: true,
+		pdf_blur: true,
+		input_change: true,
+		output_change: true,
+		save: true,
+		submit: true,
+		execute: true,
+	};
+
 	const mult = {
 		s: 1000,
 		m: 1000 * 60,
@@ -173,6 +197,65 @@ $(document).ready(() => {
 		execute: "Execute",
 	};
 
+	const colorInChart = {
+		insert: {
+			bg: "#00C853",
+			border: "#008E3C",
+		},
+		remove: {
+			bg: "#FF3D00",
+			border: "#DD2C00",
+		},
+		cursor_selection: {
+			bg: "#2962FF",
+			border: "#0039CB",
+		},
+		sel_selection: {
+			bg: "#6200EA",
+			border: "#4500B5",
+		},
+		focus: {
+			bg: "#FFAB00",
+			border: "#FF8F00",
+		},
+		blur: {
+			bg: "#757575",
+			border: "#424242",
+		},
+		visibility: {
+			bg: "#AA00FF",
+			border: "#7B1FA2",
+		},
+		pdf_focus: {
+			bg: "#FF6D00",
+			border: "#E65100",
+		},
+		pdf_blur: {
+			bg: "#9E9E9E",
+			border: "#616161",
+		},
+		input_change: {
+			bg: "#00B8D4",
+			border: "#0088A3",
+		},
+		output_change: {
+			bg: "#FF4081",
+			border: "#D81B60",
+		},
+		save: {
+			bg: "#64DD17",
+			border: "#3E9C00",
+		},
+		submit: {
+			bg: "#304FFE",
+			border: "#1A237E",
+		},
+		execute: {
+			bg: "#D50000",
+			border: "#9B0000",
+		},
+	};
+
 	// ######################################################
 	// ############          Main Method         ############
 	// ######################################################
@@ -195,9 +278,13 @@ $(document).ready(() => {
 
 				recording.length = 0;
 
-				Object.keys(data).forEach((c, i, a) => {
-					// Push to table of saved
-					$(`<tr>
+				let curEvents = -1;
+
+				Object.keys(data)
+					.sort((a, b) => a - b)
+					.forEach((c, i, a) => {
+						// Push to table of saved
+						$(`<tr>
 							<td>${convTimeToEpoch(c)}</td>
 							<td>${convTimeToEpoch(parseInt(c) + data[c][data[c].length - 1].time)}</td>
 							<td id="sel_${c}" class="sel_recording">
@@ -205,25 +292,25 @@ $(document).ready(() => {
 							</td>
 					</tr>`).appendTo("tbody#tbody_saved");
 
-					$(`#sel_${c}`).click(() => {
-						playOrStop(true);
-						setValueTimer(recording.presumIndexDuration[i]);
-						setSelectedSaveTime(c);
+						$(`#sel_${c}`).click(() => {
+							playOrStop(false);
+							setValueTimer(recording.presumIndexDuration[i]);
+							setSelectedSaveTime(c);
+						});
+
+						recording.eventsIndex[c] = i;
+						recording.indexEvents[i] = c;
+						recording.presumIndexDuration[i] = recording.duration;
+						recording.length++;
+
+						recording.duration += data[c][data[c].length - 1].time;
+
+						if (curEvents === -1) {
+							curEvents = c;
+						}
+
+						recording.duration += confPlayer.durationNext;
 					});
-
-					recording.eventsIndex[c] = i;
-					recording.indexEvents[i] = c;
-					recording.presumIndexDuration[i] = recording.duration;
-					recording.length++;
-
-					recording.duration += data[c][data[c].length - 1].time;
-
-					if (recording.curEvents === -1) {
-						recording.curEvents = c;
-					}
-
-					recording.duration += confPlayer.durationNext;
-				});
 
 				$(`#range_player`).attr("max", recording.duration);
 				$(`#sel_${recording.curEvents}`).text("Selected");
@@ -232,86 +319,64 @@ $(document).ready(() => {
 				setTitle("Ready!");
 				setLoading(false);
 				setStatus("Ready!");
-				setSelectedSaveTime(recording.curEvents);
+				setSelectedSaveTime(curEvents);
 			},
 			error: function (error) {
 				console.error(error);
-				setTitle("Error")
+				setTitle("Something went wrong!");
 			},
 		});
 	};
 
-	const playOrStop = (stopRec = isRecPlaying) => {
-		if (stopRec) {
+	const playOrStop = (playRecording = isRecPlaying) => {
+		if (!playRecording) {
 			// if recording is playing -> stop
 			stop();
 			$("#rec_btn").text("Play");
 		} else {
 			// if recording is not played -> played in the time in input.
-			play($(`#range_player`).val());
+			play();
 			$("#rec_btn").text("Stop");
 		}
 
-		isRecPlaying = !stopRec;
+		isRecPlaying = playRecording;
 	};
 
-	const play = (time = 0) => {
+	const play = (time = $(`#range_player`).val()) => {
+		const { curEvent, timeEvent, eventsIndex } = setState(time);
+		startTimer();
+
+		// Start after time to eventsIndex
+		if (curEvent.time < timeEvent)
+			funcTimeoutRecording = setTimeout(() => {
+				startRecording(eventsIndex);
+			}, timeEvent - curEvent.time);
+		else
+			funcTimeoutRecording = setTimeout(() => {
+				startRecording(eventsIndex);
+			}, curEvent.time - timeEvent);
+	};
+
+	const setState = (time = $(`#range_player`).val()) => {
 		emptyEditor();
 
-		let left = 0;
-		let right = recording.length - 1;
-		let eventIndex = 0;
+		const eventsIndex = findEventsIndex(time);
+		setSelectedSaveTime(eventsIndex);
 
-		// lower bound
-		while (left <= right) {
-			let middle = left + Math.floor((right - left) / 2);
+		const timeEvent =
+			time - recording.presumIndexDuration[recording.eventsIndex[eventsIndex]];
+		const events = recording.events[eventsIndex];
 
-			if (recording.presumIndexDuration[middle] > time) {
-				right = middle - 1;
-			} else {
-				eventIndex = middle;
-				left = middle + 1;
-			}
-		}
+		const eventIndex = findEventIndex(time, eventsIndex);
 
-		eventIndex = recording.indexEvents[eventIndex];
-		setSelectedSaveTime(eventIndex);
-
-		let timeEvent =
-			time - recording.presumIndexDuration[recording.eventsIndex[eventIndex]];
-		let events = recording.events[eventIndex];
-		left = 0;
-		right = events.length - 1;
-		let eventsIndex = events.length - 1;
-
-		// upper bound
-		while (left <= right) {
-			let middle = left + Math.floor((right - left) / 2);
-
-			if (events[middle].time < timeEvent) {
-				left = middle + 1;
-			} else {
-				eventsIndex = middle;
-				right = middle - 1;
-			}
-		}
-
-		while (
-			eventsIndex > 0 &&
-			events[eventsIndex].time - events[eventsIndex - 1].time <=
-				confPlayer.mergeDuration
-		) {
-			eventsIndex--;
-		}
-
-		handlerForLast = {};
+		const handlerForLast = {};
 
 		// from index 0 of selected save time to eventsIndex, run all insert and remove
-		for (let index = 0; index < eventsIndex; index++) {
+		for (let index = 0; index < eventIndex; index++) {
 			const event = events[index];
 			if (handlersIncludeInGoState[event.event]) {
 				handlers[event.event](event.args);
-			} else if (events[eventsIndex] - event.time <= confPlayer.mergeDuration) {
+			} else {
 				handlerForLast[event.event] = () => handlers[event.event](event.args);
 			}
 		}
@@ -321,17 +386,11 @@ $(document).ready(() => {
 			f();
 		});
 
-		startTimer();
-
-		// Start after time to eventsIndex
-		if (events[eventsIndex].time < timeEvent)
-			funcTimeoutRecording = setTimeout(() => {
-				startRecording(eventsIndex);
-			}, timeEvent - events[eventsIndex].time);
-		else
-			funcTimeoutRecording = setTimeout(() => {
-				startRecording(eventsIndex);
-			}, events[eventsIndex].time - timeEvent);
+		return {
+			curEvent: events[eventIndex],
+			timeEvent: timeEvent,
+			eventsIndex: eventIndex,
+		};
 	};
 
 	// Methods for plays
@@ -346,7 +405,7 @@ $(document).ready(() => {
 				funcTimeoutRecording = setTimeout(() => {
 					setStatus("Finish...");
 					setTitle("Finish...");
-					playOrStop(true);
+					playOrStop(false);
 				}, confPlayer.durationNext);
 				return;
 			}
@@ -437,16 +496,16 @@ $(document).ready(() => {
 	// ############         Chart Method         ############
 	// ######################################################
 
-	const setUpChart = (
-		index = recording.curEvents,
-		type = confChart.type ? confChart.type : "bar",
-		divider = confChart.divider ? confChart.divider : 1,
-		time = confChart.time ? confChart.time : "s",
-		stack = confChart.stack != undefined ? confChart.stack : true,
-		step = confChart.step != undefined ? confChart.step : false,
-		fill = confChart.fill != undefined ? confChart.fill : false
-	) => {
-		if (curChart != null) curChart.destroy();
+	const setUpChart = (index = recording.curEvents, destroy = false) => {
+		// if (curChart != null) curChart.destroy();
+
+		const type = confChart.type ? confChart.type : "bar";
+		const divider = confChart.divider ? confChart.divider : 1;
+		const time = confChart.time ? confChart.time : "s";
+		const stack = confChart.stack ? confChart.stack : true;
+		const step = confChart.step ? confChart.step : false;
+		const fill = confChart.fill ? confChart.fill : false;
+		const border = confChart.border ? confChart.border : "#595959";
 
 		let times = calcTimeForChart(recording.events[index], divider, time);
 		let data = formatToChartData(recording.events[index], times);
@@ -455,14 +514,23 @@ $(document).ready(() => {
 
 		const dataChart = {
 			labels: times.map((c) => c.time),
-			datasets: Object.entries(data).map(([k, v]) => {
-				return {
-					label: nameInChart[k],
-					data: v,
-					fill: fill,
-					stepped: step,
-				};
-			}),
+			datasets: Object.entries(data)
+				.map(([k, v]) => {
+					if (!showInChart[k]) return null;
+
+					return {
+						label: nameInChart[k],
+						data: v,
+						fill: fill,
+						stepped: step,
+						borderColor: colorInChart[k].border
+							? colorInChart[k].border
+							: border,
+						borderWidth: 2,
+						backgroundColor: colorInChart[k].bg,
+					};
+				})
+				.filter((c) => c),
 		};
 
 		const configChart = {
@@ -479,13 +547,22 @@ $(document).ready(() => {
 			},
 		};
 
-		const chart = new Chart(ctx, {
-			...configChart,
-			data: dataChart,
-		});
+		if (curChart == null || destroy) {
+			if (curChart != null) curChart.destroy();
 
-		curChart = chart;
-		return chart;
+			curChart = new Chart(ctx, {
+				...configChart,
+				data: dataChart,
+			});
+		} else {
+			curChart.data.labels = dataChart.labels;
+			curChart.data.datasets = dataChart.datasets;
+			curChart.options = configChart.options;
+			curChart.type = configChart.type;
+			curChart.update();
+		}
+
+		return curChart;
 	};
 
 	const formatToChartData = (arrEvent, arrTimes) => {
@@ -502,32 +579,37 @@ $(document).ready(() => {
 				res[e.event] = {};
 			}
 
-			if (!res[e.event][arrTimes[idxTimes].time]) {
-				res[e.event][arrTimes[idxTimes].time] = 0;
+			const curTime = arrTimes[idxTimes].time;
+
+			if (!res[e.event][curTime]) {
+				res[e.event][curTime] = 0;
 			}
 
-			res[e.event][arrTimes[idxTimes].time]++;
+			res[e.event][curTime]++;
 		});
 
 		return res;
 	};
 
 	const calcTimeForChart = (arrEvent, divider, time) => {
-		let res = [];
+		const res = [];
 
-		let dev = calcTimeToMilliSec(divider, time);
-		let max = arrEvent[arrEvent.length - 1].time;
+		const dev = calcTimeToMilliSec(divider, time);
+		const max = arrEvent[arrEvent.length - 1].time;
 		let i = 1;
 
 		for (; dev * i < max; i++) {
+			const curTime = dev * i;
 			res.push({
-				time: Math.floor(divider * i * 100) / 100 + time,
+				time: convTimeToHHMMSS(curTime, false, true),
 				ms: dev * i,
 			});
 		}
 
+		// const curTime = Math.floor(divider * i * 100) / 100 + time;
+		const curTime = dev * i;
 		res.push({
-			time: Math.floor(divider * i * 100) / 100 + time,
+			time: convTimeToHHMMSS(curTime, false, true),
 			ms: dev * i,
 		});
 
@@ -563,7 +645,7 @@ $(document).ready(() => {
 	$("#config_chart_type").on("change", (e) => {
 		let val = $("#config_chart_type").val();
 		confChart.type = val;
-		setUpChart();
+		setUpChart(undefined, true);
 	});
 
 	$("#config_chart_stack").on("click", (e) => {
@@ -591,7 +673,7 @@ $(document).ready(() => {
 	// ######################################################
 
 	$("#rec_btn").click(() => {
-		playOrStop();
+		playOrStop(!isRecPlaying);
 	});
 
 	$("#range_player").on("mousemove", function () {
@@ -600,9 +682,10 @@ $(document).ready(() => {
 
 	$("#range_player").on("change", function () {
 		let isPlaying = isRecPlaying;
-		if (isPlaying) playOrStop(true);
-		updateTimerRange();
 		if (isPlaying) playOrStop(false);
+		updateTimerRange();
+		setState();
+		if (isPlaying) playOrStop(true);
 	});
 
 	// ######################################################
@@ -629,8 +712,64 @@ $(document).ready(() => {
 		);
 	}
 
+	// find the events key
+	const findEventsIndex = (time) => {
+		let left = 0;
+		let right = recording.length - 1;
+		let eventsIndex = 0;
+
+		// lower bound
+		while (left <= right) {
+			let middle = left + Math.floor((right - left) / 2);
+
+			if (recording.presumIndexDuration[middle] > time) {
+				right = middle - 1;
+			} else {
+				eventsIndex = middle;
+				left = middle + 1;
+			}
+		}
+
+		return recording.indexEvents[eventsIndex];
+	}
+
+	// from events key, find the nearest index (floor) from time
+	const findEventIndex = (time, eventsIndex) => {
+		const timeEvent =
+			time - recording.presumIndexDuration[recording.eventsIndex[eventsIndex]];
+		const events = recording.events[eventsIndex];
+		
+		let left = 0;
+		let right = events.length - 1;
+		let eventIndex = events.length - 1;
+
+		// upper bound
+		while (left <= right) {
+			let middle = left + Math.floor((right - left) / 2);
+
+			if (events[middle].time < timeEvent) {
+				left = middle + 1;
+			} else {
+				eventIndex = middle;
+				right = middle - 1;
+			}
+		}
+
+		while (
+			eventIndex > 0 &&
+			events[eventIndex].time - events[eventIndex - 1].time <=
+				confPlayer.mergeDuration
+		) {
+			eventIndex--;
+		}
+
+		return eventIndex;
+	}
+
 	const emptyEditor = () => {
 		editor.session.setValue("", -1);
+		$("#editor_input").val("");
+		$("#editor_output").val("");
 	};
 
 	const disabledInput = (bool) => {
@@ -668,17 +807,13 @@ $(document).ready(() => {
 	};
 
 	const convTimeToHHMMSS = (ms, showZero = true, showMS = false) => {
-		console.log(ms);
-
 		let seconds = ms / 1000;
 		const hours = parseInt(seconds / 3600).toFixed(0);
 		seconds = seconds % 3600;
 		const minutes = parseInt(seconds / 60).toFixed(0);
 		seconds = (seconds % 60).toFixed(0);
 		const sec = parseInt(seconds / 60).toFixed(0);
-		ms = (seconds % 60).toFixed(0);
-
-		console.log(ms, hours, minutes, sec);
+		ms = (ms % 1000).toFixed(0);
 
 		return (
 			(hours > 0 ? (hours < 10 ? "0" : "") + hours + ":" : "") +
@@ -687,7 +822,7 @@ $(document).ready(() => {
 				: "") +
 			(seconds < 10 ? "0" : "") +
 			seconds +
-			(showMS ? ms : "")
+			(showMS ? "." + ms.slice(0, 2) : "")
 		);
 	};
 
@@ -696,7 +831,9 @@ $(document).ready(() => {
 	};
 
 	const setSelectedSaveTime = (time, stop = true) => {
-		if (stop) playOrStop(true);
+		if (stop) playOrStop(false);
+		if (time == recording.curEvents) return;
+
 		$(`#sel_${recording.curEvents}`).text("Select");
 		$(`#sel_${recording.curEvents}`).removeClass("sel_selected");
 
@@ -710,10 +847,12 @@ $(document).ready(() => {
 		let divider = (duration / confChart.autoDivider / 1000).toFixed(2);
 		let times = "s";
 
+		confChart.divider = divider;
+		confChart.time = times;
 		$(`#config_chart_divider`).val(divider);
 		$(`#config_chart_time`).val(times);
 
-		setUpChart(time, confChart.type, divider, times);
+		setUpChart(time);
 	};
 
 	const setStatus = (text = "...") => {

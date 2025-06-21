@@ -217,11 +217,13 @@ div.wrap_input_player > input {
 
 .sel_recording {
 	cursor: pointer;
+	text-decoration: underline;
 }
 
 .sel_selected {
 	font-weight: bold;
 	text-decoration: underline;
+	cursor: auto;
 }
 
 /* Chart */

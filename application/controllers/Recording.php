@@ -60,13 +60,11 @@ class Recording extends CI_Controller
 		$this->twig->display('pages/recording_list.twig', $data);
 	}
 
-	// TODO: Fix this up pls
 	public function index($assignment_id = NULL, $problem_id = 1, $username = NULL, $rec_id = NULL)
 	{
 		// If no assignment is given, use selected assignment
 		if ($assignment_id === NULL)
 			redirect('recording/all');
-			// $assignment_id = $this->user->selected_assignment['id'];
 
 		if ($assignment_id == 0)
 			show_error('No assignment selected.');

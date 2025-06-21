@@ -138,7 +138,11 @@
 							<td>{{ recording.username }}</td>
 							<td>{{ recording.upload_at }}</td>
 							<td>
+								{% if recording.rec_id == rec_id %}
+								<span class="sel_selected">Selected</span>
+								{% else %}
 								<a dir="auto" href="{{site_url("recording/#{assignment.id}/#{filter_problem}/#{recording.username}/#{recording.rec_id}")}}">See Recording</a>
+								{% endif %}
 							</td>
 						</tr>
 					{% endfor %}
