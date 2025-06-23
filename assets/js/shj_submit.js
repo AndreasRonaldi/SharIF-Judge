@@ -40,6 +40,7 @@ $(document).ready(function () {
 				success: function (data) {
 					data = JSON.parse(data);
 					editor.setValue(data.content);
+					recording.init();
 					$("#ajax_status").html(data.message);
 				},
 				error: function (error) {
@@ -272,6 +273,38 @@ $(document).ready(function () {
 	// Saved Event
 	const recording = {
 		events: [],
+		metrics: {
+			// Jadi code churn rate or cct = (inserted + removed) / total_char_submit_code
+			// for every recording, find the latest submission (if exists) 
+			// and get the char diff using jsdiff, to get total_char_submit_code
+			// cct can be scored with the average for the problem
+			inserted: 0, // total char inserted
+			removed: 0, // total char removed
+
+			// Using peak detection to detect if there's are hot spot in the inserted/removed per lines (debugging pattern)
+			freq_changes: [], // frequency of change per line
+			list_of_hotspot: [], // at line x where the spike are
+
+			// total_input_change and total_execute for debugging pattern
+			total_input_change: 0, 
+			total_execute: 0,
+
+			// pattern when user change the output without changing the input first -> meaning there's debugging
+			total_output_change: {}, // key -> input, value: frequency of change output with difference output?
+
+			// Using peak detection from list_of_hotspot to detect if the pause between edit is wierd? (sometime longger than other)
+			// What about using the average, if the average is high? possibility the user is just waiting for other people work/gpt?
+			// the score can be scored with the average for the problem
+			list_of_pauses: [],
+
+			// using threshold per submission how manytime user is changing navigation per hours or per submission?
+			freq_change_nav: {}, // key -> hours, value: frequency of change
+
+			// the biggest total char inserted and removed in code
+			// to get copy-paste pattern
+			max_inserted: -1,
+			max_removed: 10e9,
+		},
 		startTime: -1,
 
 		init: () => {
@@ -281,6 +314,7 @@ $(document).ready(function () {
 	};
 
 	// What's recording does the system will record
+	// key function that will run in "record" class
 	const include = {
 		editor: true,
 		web: true,
@@ -298,12 +332,15 @@ $(document).ready(function () {
 	const handlers = {
 		// ######### Editor Event #########
 		// Detected Every Command that executed in editor
-		editor_change: (e) =>
+		editor_change: (e) => {
+
+
 			recordEvent(e.action, {
 				data: e.lines,
 				start: e.start,
 				end: e.end,
-			}),
+			})
+		},
 		// Detected on cursor change
 		editor_cursor: () => recordEvent("cursor_selection", getSelection(editor)),
 		// Detected on selection
@@ -448,10 +485,6 @@ $(document).ready(function () {
 	const record = {
 		// Code Editor
 		editor: () => {
-			// ####### Editor #######
-			recording.startValue = editor.getValue();
-			recording.startSelection = getSelection(editor);
-
 			// Exec command
 			addListener.editor_change();
 
@@ -517,10 +550,6 @@ $(document).ready(function () {
 	// Methods to start recording.
 	const recordStart = () => {
 		recording.init();
-
-		// for (let index = 0; index < 400; index++) {
-		// 	recordEvent("test");
-		// }
 
 		Object.keys(record).forEach((evtName) => {
 			const inInclude = evtName in include;
