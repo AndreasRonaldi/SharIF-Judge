@@ -56,10 +56,9 @@ $(document).ready(function () {
 		} else {
 			disableEditor(false);
 		}
-	}
+	};
 
 	const loadBeforeRec = async (problem_id) => {
-
 		const funcLoad = async (data) => {
 			data = JSON.parse(data);
 
@@ -70,7 +69,7 @@ $(document).ready(function () {
 
 			befRecording = await JSON.parse(data.content);
 			canItBeDisabled();
-		}
+		};
 
 		if (problem_id == 0) {
 			disableEditor(true);
@@ -89,7 +88,7 @@ $(document).ready(function () {
 				},
 			});
 		}
-	}
+	};
 
 	$("select#problems").change(function () {
 		var v = $(this).val();
@@ -104,7 +103,6 @@ $(document).ready(function () {
 			$(
 				'<option value="' + shj.p[v][i] + '">' + shj.p[v][i] + "</option>"
 			).appendTo("select#languages");
-
 	});
 
 	$("select#languages").change(function () {
@@ -121,7 +119,7 @@ $(document).ready(function () {
 		} else {
 			editor.session.setMode("ace/mode/plain_text");
 		}
-		
+
 		canItBeDisabled();
 	});
 
@@ -137,10 +135,7 @@ $(document).ready(function () {
 				code_editor: editor.getValue(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec_data: JSON.stringify({
-					...befRecording,
-					[recording.startTime]: recording.events
-				}),
+				rec_data: recording.stringify(),
 			},
 			cache: false,
 			success: function (data) {
@@ -168,10 +163,7 @@ $(document).ready(function () {
 				code_editor: editor.getValue(),
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec_data: JSON.stringify({
-					...befRecording,
-					[recording.startTime]: recording.events
-				}),
+				rec_data: recording.stringify(),
 			},
 			cache: false,
 			success: function (data) {
@@ -195,19 +187,18 @@ $(document).ready(function () {
 		disableEditor(true);
 		handlers.execute();
 
+		const input = $("textarea#editor_input").val();
+
 		$.ajax({
 			type: "POST",
 			url: shj.site_url + "submit/save/execute",
 			data: {
 				shj_csrf_token: shj.csrf_token,
 				code_editor: editor.getValue(),
-				editor_input: $("textarea#editor_input").val(),
+				editor_input: input,
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
-				rec_data: JSON.stringify({
-					...befRecording,
-					[recording.startTime]: recording.events
-				}),
+				rec_data: recording.stringify(),
 			},
 			cache: false,
 			success: function (data) {
@@ -225,10 +216,10 @@ $(document).ready(function () {
 								data = JSON.parse(data);
 								$("textarea#editor_output").val(data.content);
 								// ----
-								$("textarea#editor_output").trigger(
-									"output_change",
-									data.content
-								);
+								$("textarea#editor_output").trigger("output_change", {
+									value: data.content,
+									input: input,
+								});
 								// ----
 								if (!data.status) {
 									setTimeout(update, 1000);
@@ -268,14 +259,14 @@ $(document).ready(function () {
 	let isRetrived = false;
 
 	// Saved Recording from before...
-	let befRecording = {}
+	let befRecording = {};
 
 	// Saved Event
 	const recording = {
 		events: [],
 		metrics: {
 			// Jadi code churn rate or cct = (inserted + removed) / total_char_submit_code
-			// for every recording, find the latest submission (if exists) 
+			// for every recording, find the latest submission (if exists)
 			// and get the char diff using jsdiff, to get total_char_submit_code
 			// cct can be scored with the average for the problem
 			inserted: 0, // total char inserted
@@ -283,10 +274,10 @@ $(document).ready(function () {
 
 			// Using peak detection to detect if there's are hot spot in the inserted/removed per lines (debugging pattern)
 			freq_changes: [], // frequency of change per line
-			list_of_hotspot: [], // at line x where the spike are
+			// list_of_hotspot: [], // at line x where the spike are
 
 			// total_input_change and total_execute for debugging pattern
-			total_input_change: 0, 
+			total_input_change: 0,
 			total_execute: 0,
 
 			// pattern when user change the output without changing the input first -> meaning there's debugging
@@ -295,7 +286,7 @@ $(document).ready(function () {
 			// Using peak detection from list_of_hotspot to detect if the pause between edit is wierd? (sometime longger than other)
 			// What about using the average, if the average is high? possibility the user is just waiting for other people work/gpt?
 			// the score can be scored with the average for the problem
-			list_of_pauses: [],
+			// list_of_pauses: [],
 
 			// using threshold per submission how manytime user is changing navigation per hours or per submission?
 			freq_change_nav: {}, // key -> hours, value: frequency of change
@@ -303,13 +294,43 @@ $(document).ready(function () {
 			// the biggest total char inserted and removed in code
 			// to get copy-paste pattern
 			max_inserted: -1,
-			max_removed: 10e9,
+			max_removed: -1,
+		},
+
+		// calculate base on metrics above
+		calcMetrics: {
+			cct: 0,
+			list_of_hotspot: [],
+			list_of_pauses: [],
 		},
 		startTime: -1,
 
 		init: () => {
 			recording.events = [];
 			recording.startTime = Date.now();
+			recording.metrics = {
+				inserted: 0,
+				removed: 0,
+				freq_changes: [],
+				list_of_hotspot: [],
+				total_input_change: 0,
+				total_execute: 0,
+				total_output_change: {},
+				list_of_pauses: [],
+				freq_change_nav: {},
+				max_inserted: -1,
+				max_removed: -1,
+			};
+		},
+
+		stringify: () => {
+			return JSON.stringify({
+				...befRecording,
+				[recording.startTime]: {
+					metrics: recording.metrics,
+					events: recording.events,
+				},
+			});
 		},
 	};
 
@@ -329,22 +350,58 @@ $(document).ready(function () {
 	// ############           Listener            ###########
 	// ######################################################
 
+	// handlers for metrics only
+	const metricHandlers = {
+		editor_change: (e) => {
+			if (e.action === "insert")
+				recording.metrics.inserted += e.lines.reduce(
+					(prev, cur) => prev + cur.length,
+					0
+				);
+			if (e.action === "remove")
+				recording.metrics.removed += e.lines.reduce(
+					(prev, cur) => prev + cur.length,
+					0
+				);
+		},
+		editor_cursor: (selection) => {},
+		editor_selection: (selection) => {},
+		focus: () => {},
+		blur: () => {},
+		visibility: (isVisible) => {},
+		pdf_focus: () => {},
+		pdf_blur: () => {},
+		input_change: (value) => {},
+		output_change: (data) => {},
+		save: () => {},
+		submit: () => {},
+		execute: () => {},
+	};
+
+	// handlers for recording
 	const handlers = {
 		// ######### Editor Event #########
 		// Detected Every Command that executed in editor
 		editor_change: (e) => {
-
-
 			recordEvent(e.action, {
 				data: e.lines,
 				start: e.start,
 				end: e.end,
-			})
+			});
+			metricHandlers["editor_change"](e);
 		},
 		// Detected on cursor change
-		editor_cursor: () => recordEvent("cursor_selection", getSelection(editor)),
+		editor_cursor: () => {
+			const change = getSelection(editor);
+			recordEvent("cursor_selection", change);
+			metricHandlers["editor_cursor"](change);
+		},
 		// Detected on selection
-		editor_selection: () => recordEvent("sel_selection", getSelection(editor)),
+		editor_selection: () => {
+			const change = getSelection(editor);
+			recordEvent("sel_selection", change);
+			metricHandlers["editor_selection"](change);
+		},
 
 		// ######### Windows Event #########
 		// Detected Leaving Focus in almost all browser (still active page, but on different windows or on iFrame PDF viewer)
@@ -353,6 +410,7 @@ $(document).ready(function () {
 			addListener.blur();
 
 			recordEvent("focus");
+			metricHandlers["focus"]();
 		},
 		// Detected on Focus in almost all browser (active page)
 		blur: () => {
@@ -360,6 +418,7 @@ $(document).ready(function () {
 			addListener.focus();
 
 			recordEvent("blur");
+			metricHandlers["blur"]();
 		},
 		// Detected Leaving Page in almost all browser (page not visible anymore)
 		visibility: (evt) => {
@@ -395,6 +454,7 @@ $(document).ready(function () {
 			}
 
 			recordEvent("visibility", isVisible);
+			metricHandlers["visibility"](isVisible);
 		},
 
 		// ######### PDF Viewer ##########
@@ -404,6 +464,7 @@ $(document).ready(function () {
 			addListener.pdf_blur();
 
 			recordEvent("pdf_focus");
+			metricHandlers["pdf_focus"]();
 		},
 		// Detected when user click outside/blur of the pdf viewer IDE
 		pdf_blur: () => {
@@ -411,18 +472,37 @@ $(document).ready(function () {
 			addListener.pdf_focus();
 
 			recordEvent("pdf_blur");
+			metricHandlers["pdf_blur"]();
 		},
 
 		// ######### Input Event #########
-		input_change: (e) => recordEvent("input_change", e.currentTarget.value),
+		input_change: (e) => {
+			recordEvent("input_change", e.currentTarget.value);
+			metricHandlers["input_change"](e.currentTarget.value);
+		},
 
 		// ######### Output Event #########
-		output_change: (_, data) => recordEvent("output_change", data),
+		output_change: (_, { value, input }) => {
+			recordEvent("output_change", value);
+			metricHandlers["output_change"]({
+				value,
+				input,
+			});
+		},
 
 		// ######### Action Event #########
-		save: () => recordEvent("save"),
-		submit: () => recordEvent("submit"),
-		execute: () => recordEvent("execute"),
+		save: () => {
+			recordEvent("save");
+			metricHandlers["save"]();
+		},
+		submit: () => {
+			recordEvent("submit");
+			metricHandlers["submit"]();
+		},
+		execute: () => {
+			recordEvent("execute");
+			metricHandlers["execute"]();
+		},
 	};
 
 	const addListener = {
@@ -452,7 +532,8 @@ $(document).ready(function () {
 	};
 
 	const removeListener = {
-		editor_change: () => editor.commands.off("afterExec", handlers.editor_change),
+		editor_change: () =>
+			editor.commands.off("afterExec", handlers.editor_change),
 		editor_cursor: () =>
 			editor.selection.off("changeCursor", handlers.editor_cursor),
 		editor_selection: () =>
@@ -578,7 +659,6 @@ $(document).ready(function () {
 			event,
 			args,
 		});
-
 	};
 
 	const addEvent = (obj, evType, fn, isCapturing) => {
