@@ -37,7 +37,8 @@ $(document).ready(function () {
 				success: function (data) {
 					data = JSON.parse(data);
 					editor.setValue(data.content);
-					recording.init();
+					recording.initMetrics();
+					befText = data.content;
 					$("#ajax_status").html(data.message);
 				},
 				error: function (error) {
@@ -262,6 +263,7 @@ $(document).ready(function () {
 
 	// Saved Recording from before...
 	let befRecording = {};
+	let befText = "";
 
 	// Saved Event
 	const recording = {
@@ -303,6 +305,10 @@ $(document).ready(function () {
 		init: () => {
 			recording.events = [];
 			recording.startTime = Date.now();
+			recording.initMetrics();
+		},
+
+		initMetrics: () => {
 			recording.metrics = {
 				inserted: 0,
 				removed: 0,
@@ -330,7 +336,7 @@ $(document).ready(function () {
 		},
 
 		getCalcMetrics: () => {
-			return calcMetrics(recording.metrics)
+			return calcMetrics(recording.metrics);
 		},
 	};
 
@@ -727,7 +733,7 @@ $(document).ready(function () {
 	// handlers for metrics only
 	const metricHandlers = {
 		insert: (e, time) => {
-			const total = e.data.reduce((prev, cur) => prev + cur.length, 0);
+			const total = e.data.join("\n").length;
 
 			recording.metrics.inserted += total;
 			recording.metrics.max_inserted = Math.max(
@@ -739,7 +745,7 @@ $(document).ready(function () {
 			recordFrequency(time);
 		},
 		remove: (e, time) => {
-			const total = e.data.reduce((prev, cur) => prev + cur.length, 0);
+			const total = e.data.join("\n").length;
 			recording.metrics.removed += total;
 			recording.metrics.max_removed = Math.max(
 				total,
@@ -796,7 +802,7 @@ $(document).ready(function () {
 			recording.metrics.total_execute++;
 			recordFrequency(time);
 		},
-	}
+	};
 
 	const recordChange = ({ start, end }) => {
 		for (let i = start.row; i <= end.row; i++) {
@@ -907,9 +913,14 @@ $(document).ready(function () {
 	};
 
 	const calcMetrics = (metrics = recording.metrics) => {
+		const diffText = Diff.diffChars(befText, editor.getValue()).reduce((prev, cur) => {
+			if (!cur.added && !cur.removed) return prev;
+			return prev + cur.count;
+		}, 0);
+
 		return {
 			cct: {
-				score: (metrics.inserted + metrics.removed) / editor.getValue().length,
+				score: (metrics.inserted + metrics.removed) / diffText,
 			},
 			pauses: detectCheatingFromPauses(
 				detectPauses(
