@@ -53,8 +53,6 @@
 			<h2 id="status_rec" class="title_section title_normal"></h2>
 		</div>
 
-		<div id="testing" style="white-space: pre;"></div>
-
 		{% if list_recording is not empty %}
 		<div id="recording_wrap">
 			
@@ -122,8 +120,10 @@
 
 			<h2 class="title_section">Chart Of Action</h2>
 			<canvas id="recording_chart"></canvas>			
-
-			<h2 class="title_section">Other Recording of {{ filter_user }} in problem {{ filter_problem }}</h2>
+		</div>
+		
+		<div id="other_recording">
+			<h2 class="title_section" style="margin-bottom: 8px;">Other Recording of {{ filter_user }} in problem {{ filter_problem }}</h2>
 			<table class="sharif_table">
 				<thead>
 					<tr>

@@ -42,6 +42,7 @@ $(document).ready(() => {
 
 	// Object for playing record
 	const recording = {
+		origin: {},
 		events: {}, // Map -> time events to list of events
 		eventsIndex: {}, // Map -> index to time events
 		indexEvents: {}, // Map -> time events to index
@@ -50,19 +51,6 @@ $(document).ready(() => {
 		curEvents: -1, // Currently selected index
 		duration: 0, // Duration of events
 		save_state: [], // Saved state to use in playback
-		metrics: {
-			inserted: 0,
-			removed: 0,
-			freq_changes: [],
-			list_of_hotspot: [],
-			total_input_change: 0,
-			total_execute: 0,
-			total_output_change: {},
-			list_of_pauses: [],
-			freq_change_nav: {},
-			max_inserted: -1,
-			max_removed: -1,
-		},
 
 		reset: () => {
 			recording.events = {};
@@ -74,58 +62,24 @@ $(document).ready(() => {
 			recording.duration = 0;
 			recording.save_state = [];
 		},
-
-		resetMetrics: () => {
-			recording.metrics = {
-				inserted: 0,
-				removed: 0,
-				freq_changes: [],
-				list_of_hotspot: [],
-				total_input_change: 0,
-				total_execute: 0,
-				total_output_change: {},
-				list_of_pauses: [],
-				freq_change_nav: {},
-				max_inserted: -1,
-				max_removed: -1,
-			};
-		},
 	};
 
 	// handle that will all be run of it when setState instead of the last handlers
-	// const handlersIncludeInGoState = {
-	// 	insert: true,
-	// 	remove: true,
-	// 	cursor_selection: false,
-	// 	sel_selection: false,
-	// 	focus: false,
-	// 	blur: false,
-	// 	visibility: false,
-	// 	pdf_focus: false,
-	// 	pdf_blur: false,
-	// 	input_change: false,
-	// 	output_change: false,
-	// 	save: false,
-	// 	submit: false,
-	// 	execute: false,
-	// };
-
-	// TODO: Remove this config
 	const handlersIncludeInGoState = {
 		insert: true,
 		remove: true,
-		cursor_selection: true,
-		sel_selection: true,
-		focus: true,
-		blur: true,
-		visibility: true,
-		pdf_focus: true,
-		pdf_blur: true,
-		input_change: true,
-		output_change: true,
-		save: true,
-		submit: true,
-		execute: true,
+		cursor_selection: false,
+		sel_selection: false,
+		focus: false,
+		blur: false,
+		visibility: false,
+		pdf_focus: false,
+		pdf_blur: false,
+		input_change: false,
+		output_change: false,
+		save: false,
+		submit: false,
+		execute: false,
 	};
 
 	// handler when event is trigger
@@ -140,29 +94,23 @@ $(document).ready(() => {
 				),
 				args.data.join("\n")
 			);
-			metricHandlers["insert"](args, time);
 		},
 		remove: (args, time) => {
 			editor.session.remove({ start: args.start, end: args.end });
-			metricHandlers["remove"](args, time);
 		},
 		cursor_selection: (args, time) => {
 			setSelection(editor, args);
-			metricHandlers["editor_cursor"](args, time);
 		},
 		sel_selection: (args, time) => {
 			setSelection(editor, args);
-			metricHandlers["editor_selection"](args, time);
 		},
 		focus: (args, time) => {
 			setStatus("User is focus now");
 			setTitle("User is focus now");
-			metricHandlers["focus"](args, time);
 		},
 		blur: (args, time) => {
 			setStatus("User is not focus on website now");
 			setTitle("User is not focus on website now");
-			metricHandlers["blur"](args, time);
 		},
 		visibility: (args, time) => {
 			if ((args, time)) {
@@ -172,43 +120,32 @@ $(document).ready(() => {
 				setStatus("Switching tabs");
 				setTitle("User is on other tabs now");
 			}
-			metricHandlers["visibility"](args, time);
 		},
 		pdf_focus: (args, time) => {
 			setStatus("User is focus on pdf viewer now");
 			setTitle("User is focus on pdf viewer now");
-			metricHandlers["pdf_focus"](args, time);
 		},
 		pdf_blur: (args, time) => {
 			setStatus("User is not focus on pdf viewer now");
 			setTitle("User is not focus on pdf viewer now");
-			metricHandlers["pdf_blur"](args, time);
 		},
 		input_change: (args, time) => {
 			$("#editor_input").val(args, time);
-			metricHandlers["input_change"](args, time);
 		},
 		output_change: (args, time) => {
 			$("#editor_output").val(args, time);
-			metricHandlers["output_change"](
-				{ value: args, input: $("#editor_input").val() },
-				time
-			);
 		},
 		save: (args, time) => {
 			setStatus("User just saved");
 			setTitle("User just saved");
-			metricHandlers["save"](args, time);
 		},
 		submit: (args, time) => {
 			setStatus("User just submit!");
 			setTitle("User just submit!");
-			metricHandlers["submit"](args, time);
 		},
 		execute: (args, time) => {
 			setStatus("User is running the program.");
 			setTitle("User is running the program.");
-			metricHandlers["execute"](args, time);
 		},
 	};
 
@@ -340,7 +277,10 @@ $(document).ready(() => {
 			url: shj.site_url + "recording/download_record/" + rec_path,
 			cache: false,
 			success: (data) => {
-				recording.events = data;
+				recording.origin = data;
+				
+				recording.events = Object.fromEntries(Object.entries(data).map(([key, value]) => [key, value.events]));
+				data = recording.events;
 
 				$("select#rec_selection").empty();
 
@@ -427,7 +367,6 @@ $(document).ready(() => {
 
 	const setState = (time = $(`#range_player`).val()) => {
 		emptyEditor();
-		recording.resetMetrics();
 
 		const eventsIndex = findEventsIndex(time);
 		setSelectedSaveTime(eventsIndex);
@@ -978,108 +917,4 @@ $(document).ready(() => {
 
 	// Runner Config
 	setUpTimeDividerSelector("config_chart_time");
-
-	// handlers for metrics only
-	const metricHandlers = {
-		insert: (e, time) => {
-			const total = e.data.reduce((prev, cur) => prev + cur.length, 0);
-
-			recording.metrics.inserted += total;
-			recording.metrics.max_inserted = Math.max(
-				total,
-				recording.metrics.max_inserted
-			);
-
-			const min = Math.ceil(time / 1000 / 10).toFixed(0);
-
-			recording.metrics.freq_changes[min] =
-				++recording.metrics.freq_changes[min] || 1;
-		},
-		remove: (e, time) => {
-			const total = e.data.reduce((prev, cur) => prev + cur.length, 0);
-			recording.metrics.removed += total;
-			recording.metrics.max_removed = Math.max(
-				total,
-				recording.metrics.max_removed
-			);
-
-			const min = Math.ceil(time / 1000 / 10).toFixed(0);
-			recording.metrics.freq_changes[min] =
-				++recording.metrics.freq_changes[min] || 1;
-		},
-		editor_cursor: (selection, time) => {},
-		editor_selection: (selection, time) => {},
-		focus: (_, time) => {
-			const min = (time / 1000 / 10).toFixed(0);
-			recording.metrics.freq_change_nav[min] =
-				++recording.metrics.freq_change_nav[min] || 1;
-		},
-		blur: (_, time) => {},
-		visibility: (isVisible, time) => {},
-		pdf_focus: (_, time) => {},
-		pdf_blur: (_, time) => {},
-		input_change: (value, time) => {
-			recording.metrics.total_input_change++;
-
-			const min = Math.ceil(time / 1000 / 60).toFixed(0);
-			recording.metrics.freq_changes[min] =
-				++recording.metrics.freq_changes[min] || 1;
-		},
-		output_change: ({ value, input }, time) => {
-			if (!value.includes("Total Execution Time")) return;
-
-			let text = value
-				.split("\n")
-				.filter((c) => c)
-				.slice(1, -1)
-				.join("\n");
-
-			const arr = recording.metrics.total_output_change[input];
-			if (arr) arr.add(text);
-			else recording.metrics.total_output_change[input] = new Set().add(text);
-		},
-		save: (_, time) => {},
-		submit: (_, time) => {},
-		execute: (_, time) => {
-			recording.metrics.total_execute++;
-		},
-	};
-
-	function detectPauses(freq, threshold = 5, minDuration = 2) {
-		const pauses = [];
-		const pausesIndex = [];
-		let count = 0;
-
-		for (let i = 0; i < freq.length; i++) {
-			const val = freq[i];
-
-			console.log(i, freq[i]);
-
-			if (val == null || val <= threshold) {
-				count++;
-			} else {
-				if (count >= minDuration) {
-					pauses.push(count);
-					pausesIndex.push(i);
-				}
-				count = 0;
-			}
-		}
-
-		return { pauses, pausesIndex };
-	}
-
-	// setInterval(() => {
-	// 	// const arr = recording.metrics.total_output_change;
-
-	// 	const data = detectPauses(
-	// 		recording.metrics.freq_changes.map((c) => (c ? c : 0))
-	// 	);
-
-	// 	$("#testing").text(
-	// 		JSON.stringify(recording.metrics, null, 4) +
-	// 			"\n\n" +
-	// 			JSON.stringify(data, null, 1)
-	// 	);
-	// }, 10000);
 });

@@ -11,9 +11,6 @@ $(document).ready(function () {
 	editor.setOptions({
 		theme: "ace/theme/monokai",
 		fontSize: "11pt",
-		enableLiveAutocompletion: true,
-		enableBasicAutocompletion: true,
-		enableSnippets: true,
 	});
 
 	function disableEditor(bool) {
@@ -127,6 +124,8 @@ $(document).ready(function () {
 		disableEditor(true);
 		handlers.save();
 
+		console.log(recording.getCalcMetrics());
+
 		$.ajax({
 			type: "POST",
 			url: shj.site_url + "submit/save",
@@ -136,6 +135,7 @@ $(document).ready(function () {
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
 				rec_data: recording.stringify(),
+				rec_metrics: recording.getCalcMetrics(),
 			},
 			cache: false,
 			success: function (data) {
@@ -164,6 +164,7 @@ $(document).ready(function () {
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
 				rec_data: recording.stringify(),
+				rec_metrics: recording.getCalcMetrics(),
 			},
 			cache: false,
 			success: function (data) {
@@ -199,6 +200,7 @@ $(document).ready(function () {
 				problem_id: $("select#problems").val(),
 				language: $("select#languages").val(),
 				rec_data: recording.stringify(),
+				rec_metrics: recording.getCalcMetrics(),
 			},
 			cache: false,
 			success: function (data) {
@@ -264,6 +266,7 @@ $(document).ready(function () {
 	// Saved Event
 	const recording = {
 		events: [],
+		startTime: -1,
 		metrics: {
 			// Jadi code churn rate or cct = (inserted + removed) / total_char_submit_code
 			// for every recording, find the latest submission (if exists)
@@ -272,7 +275,7 @@ $(document).ready(function () {
 			inserted: 0, // total char inserted
 			removed: 0, // total char removed
 
-			// Using peak detection to detect if there's are hot spot in the inserted/removed per lines (debugging pattern)
+			// Using density to detect if there's are hot spot in the inserted/removed per lines (debugging pattern)
 			freq_changes: [], // frequency of change per line
 			// list_of_hotspot: [], // at line x where the spike are
 
@@ -284,26 +287,18 @@ $(document).ready(function () {
 			total_output_change: {}, // key -> input, value: frequency of change output with difference output?
 
 			// Using peak detection from list_of_hotspot to detect if the pause between edit is wierd? (sometime longger than other)
-			// What about using the average, if the average is high? possibility the user is just waiting for other people work/gpt?
 			// the score can be scored with the average for the problem
+			freq_actions: [], // frequency of change per line
 			// list_of_pauses: [],
 
 			// using threshold per submission how manytime user is changing navigation per hours or per submission?
-			freq_change_nav: {}, // key -> hours, value: frequency of change
+			freq_nav_change: {}, // key -> hours, value: frequency of change
 
 			// the biggest total char inserted and removed in code
 			// to get copy-paste pattern
 			max_inserted: -1,
 			max_removed: -1,
 		},
-
-		// calculate base on metrics above
-		calcMetrics: {
-			cct: 0,
-			list_of_hotspot: [],
-			list_of_pauses: [],
-		},
-		startTime: -1,
 
 		init: () => {
 			recording.events = [];
@@ -312,12 +307,13 @@ $(document).ready(function () {
 				inserted: 0,
 				removed: 0,
 				freq_changes: [],
-				list_of_hotspot: [],
+				// list_of_hotspot: [],
 				total_input_change: 0,
 				total_execute: 0,
 				total_output_change: {},
-				list_of_pauses: [],
-				freq_change_nav: {},
+				freq_actions: [],
+				// list_of_pauses: [],
+				freq_nav_change: {},
 				max_inserted: -1,
 				max_removed: -1,
 			};
@@ -327,10 +323,14 @@ $(document).ready(function () {
 			return JSON.stringify({
 				...befRecording,
 				[recording.startTime]: {
-					metrics: recording.metrics,
+					metrics: calcMetrics(recording.metrics),
 					events: recording.events,
 				},
 			});
+		},
+
+		getCalcMetrics: () => {
+			return calcMetrics(recording.metrics)
 		},
 	};
 
@@ -350,78 +350,58 @@ $(document).ready(function () {
 	// ############           Listener            ###########
 	// ######################################################
 
-	// handlers for metrics only
-	const metricHandlers = {
-		editor_change: (e) => {
-			if (e.action === "insert")
-				recording.metrics.inserted += e.lines.reduce(
-					(prev, cur) => prev + cur.length,
-					0
-				);
-			if (e.action === "remove")
-				recording.metrics.removed += e.lines.reduce(
-					(prev, cur) => prev + cur.length,
-					0
-				);
-		},
-		editor_cursor: (selection) => {},
-		editor_selection: (selection) => {},
-		focus: () => {},
-		blur: () => {},
-		visibility: (isVisible) => {},
-		pdf_focus: () => {},
-		pdf_blur: () => {},
-		input_change: (value) => {},
-		output_change: (data) => {},
-		save: () => {},
-		submit: () => {},
-		execute: () => {},
-	};
-
 	// handlers for recording
 	const handlers = {
 		// ######### Editor Event #########
 		// Detected Every Command that executed in editor
 		editor_change: (e) => {
-			recordEvent(e.action, {
+			const time = getCurrentTime();
+			const payload = {
 				data: e.lines,
 				start: e.start,
 				end: e.end,
-			});
-			metricHandlers["editor_change"](e);
+			};
+
+			recordEvent(e.action, time, payload);
+			metricHandlers[e.action](payload, time);
 		},
 		// Detected on cursor change
 		editor_cursor: () => {
+			const time = getCurrentTime();
 			const change = getSelection(editor);
-			recordEvent("cursor_selection", change);
-			metricHandlers["editor_cursor"](change);
+			recordEvent("cursor_selection", time, change);
+			metricHandlers["editor_cursor"](change, time);
 		},
 		// Detected on selection
 		editor_selection: () => {
+			const time = getCurrentTime();
 			const change = getSelection(editor);
-			recordEvent("sel_selection", change);
-			metricHandlers["editor_selection"](change);
+			recordEvent("sel_selection", time, change);
+			metricHandlers["editor_selection"](change, time);
 		},
 
 		// ######### Windows Event #########
 		// Detected Leaving Focus in almost all browser (still active page, but on different windows or on iFrame PDF viewer)
 		focus: () => {
+			const time = getCurrentTime();
 			removeListener.focus();
 			addListener.blur();
 
-			recordEvent("focus");
-			metricHandlers["focus"]();
+			recordEvent("focus", time);
+			metricHandlers["focus"](true, time);
 		},
 		// Detected on Focus in almost all browser (active page)
 		blur: () => {
+			const time = getCurrentTime();
 			removeListener.blur();
 			addListener.focus();
 
-			recordEvent("blur");
-			metricHandlers["blur"]();
+			recordEvent("blur", time);
+			metricHandlers["blur"](true, time);
 		},
 		// Detected Leaving Page in almost all browser (page not visible anymore)
 		visibility: (evt) => {
+			const time = getCurrentTime();
 			let v = true; // page is visible
 			let h = false; // ppage is hidden
 
@@ -453,55 +433,65 @@ $(document).ready(function () {
 				removeListener.pdf_blur();
 			}
 
-			recordEvent("visibility", isVisible);
-			metricHandlers["visibility"](isVisible);
+			recordEvent("visibility", time, isVisible);
+			metricHandlers["visibility"](isVisible, time);
 		},
 
 		// ######### PDF Viewer ##########
 		// Detected when user click/focus on the pdf viewer IDE
 		pdf_focus: () => {
+			const time = getCurrentTime();
 			removeListener.pdf_focus();
 			addListener.pdf_blur();
 
-			recordEvent("pdf_focus");
-			metricHandlers["pdf_focus"]();
+			recordEvent("pdf_focus", time);
+			metricHandlers["pdf_focus"](true, time);
 		},
 		// Detected when user click outside/blur of the pdf viewer IDE
 		pdf_blur: () => {
+			const time = getCurrentTime();
 			removeListener.pdf_blur();
 			addListener.pdf_focus();
 
-			recordEvent("pdf_blur");
-			metricHandlers["pdf_blur"]();
+			recordEvent("pdf_blur", time);
+			metricHandlers["pdf_blur"](true, time);
 		},
 
 		// ######### Input Event #########
 		input_change: (e) => {
-			recordEvent("input_change", e.currentTarget.value);
-			metricHandlers["input_change"](e.currentTarget.value);
+			const time = getCurrentTime();
+			recordEvent("input_change", time, e.currentTarget.value);
+			metricHandlers["input_change"](e.currentTarget.value, time);
 		},
 
 		// ######### Output Event #########
 		output_change: (_, { value, input }) => {
-			recordEvent("output_change", value);
-			metricHandlers["output_change"]({
-				value,
-				input,
-			});
+			const time = getCurrentTime();
+			recordEvent("output_change", time, value);
+			metricHandlers["output_change"](
+				{
+					value,
+					input,
+				},
+				time
+			);
 		},
 
 		// ######### Action Event #########
 		save: () => {
-			recordEvent("save");
-			metricHandlers["save"]();
+			const time = getCurrentTime();
+			recordEvent("save", time);
+			metricHandlers["save"](true, time);
 		},
 		submit: () => {
-			recordEvent("submit");
-			metricHandlers["submit"]();
+			const time = getCurrentTime();
+			recordEvent("submit", time);
+			metricHandlers["submit"](true, time);
 		},
 		execute: () => {
-			recordEvent("execute");
-			metricHandlers["execute"]();
+			const time = getCurrentTime();
+			recordEvent("execute", time);
+			metricHandlers["execute"](true, time);
 		},
 	};
 
@@ -651,11 +641,9 @@ $(document).ready(function () {
 	// ######################################################
 
 	// Method to record listener.
-	const recordEvent = (event, args) => {
-		let curTime = getCurrentTime();
-
+	const recordEvent = (event, time, args) => {
 		recording.events.push({
-			time: curTime,
+			time: time,
 			event,
 			args,
 		});
@@ -714,101 +702,255 @@ $(document).ready(function () {
 		return Date.now() - recording.startTime;
 	};
 
-	// --- EXPERIMENT ---
+	// + REVISI CODE
 
-	// const toStringCmd = (x) => {
-	// 	var str = "";
-	// 	var data = x.data;
-	// 	switch (x.type) {
-	// 		case "exec":
-	// 			str =
-	// 				'editor.execCommand("' +
-	// 				data.command.name +
-	// 				(data.args ? '", ' + JSON.stringify(data.args) : '"') +
-	// 				")";
-	// 			break;
-	// 		case "setSelection":
-	// 			str = "setSelection(editor, " + JSON.stringify(data) + ")";
-	// 			break;
-	// 		case "setValue":
-	// 			if (lastValue != data) {
-	// 				lastValue = data;
-	// 				str = "editor.setValue(" + JSON.stringify(data) + ", -1)";
-	// 			} else {
-	// 				return;
-	// 			}
-	// 			break;
-	// 		case "selection":
-	// 			str = "testSelection(editor, " + JSON.stringify(data) + ")";
-	// 			break;
-	// 		case "value":
-	// 			if (lastValue != data) {
-	// 				lastValue = data;
-	// 				str = "testValue(editor, " + JSON.stringify(data) + ")";
-	// 			} else {
-	// 				return;
-	// 			}
-	// 			break;
-	// 	}
-	// 	return str + (x.source ? " // " + x.source : "");
-	// };
+	const metricConfig = {
+		freqRange: 5, // for freq_pause in seconds
+		freqNavRange: 10, // for freq_change_nav
 
-	// function download(filename, text) {
-	// 	var element = document.createElement("a");
-	// 	element.setAttribute(
-	// 		"href",
-	// 		"data:text/plain;charset=utf-8," + encodeURIComponent(text)
-	// 	);
-	// 	element.setAttribute("download", filename);
+		thresholdPause: 5, // pause -> (n action <= threshold)
+		minDurationPause: 2, // how many freqRange minimal for a pause to occured
 
-	// 	element.style.display = "none";
-	// 	document.body.appendChild(element);
+		windowSize: 3,
+		thresholdMult: 1.5,
 
-	// 	element.click();
+		thresholdInputExec: 10,
+		thresholdOutputChange: 5,
 
-	// 	document.body.removeChild(element);
-	// }
+		thresholdNavChange: 5,
 
-	// let Root = protobuf.Root,
-	// 	Type = protobuf.Type,
-	// 	Field = protobuf.Field;
+		thresholdInsert: 500,
+		thresholdRemove: 500,
+		thresholdBetweenInsertAndRemove: 50,
+	};
 
-	// console.log(shj);
-	// console.log(`${shj.base_url}assets/proto/test.proto`);
-	// console.log(protobuf);
+	// handlers for metrics only
+	const metricHandlers = {
+		insert: (e, time) => {
+			const total = e.data.reduce((prev, cur) => prev + cur.length, 0);
 
-	// console.log(urlData);
+			recording.metrics.inserted += total;
+			recording.metrics.max_inserted = Math.max(
+				total,
+				recording.metrics.max_inserted
+			);
 
-	// let test = async () => {
-	// 	await protobuf.load(`recording/proto/test.proto`, (err, root) => {
-	// 		if (err)
-	// 			throw err;
+			recordChange(e);
+			recordFrequency(time);
+		},
+		remove: (e, time) => {
+			const total = e.data.reduce((prev, cur) => prev + cur.length, 0);
+			recording.metrics.removed += total;
+			recording.metrics.max_removed = Math.max(
+				total,
+				recording.metrics.max_removed
+			);
 
-	// 		let test = root.lookupType("Test");
+			recordChange(e);
+			recordFrequency(time);
+		},
+		editor_cursor: (selection, time) => {
+			recordFrequency(time);
+		},
+		editor_selection: (selection, time) => {
+			recordFrequency(time);
+		},
+		focus: (_, time) => {
+			recordFrequencyNav(time);
+		},
+		blur: (_, time) => {},
+		visibility: (isVisible, time) => {},
+		pdf_focus: (_, time) => {},
+		pdf_blur: (_, time) => {},
+		input_change: (value, time) => {
+			recording.metrics.total_input_change++;
+			recordFrequency(time);
+		},
+		output_change: ({ value, input }, time) => {
+			if (!value.includes("Total Execution Time")) return;
 
-	// 		console.log(test);
-	// 	})
-	// }
+			let text = value
+				.split("\n")
+				.filter((c) => c)
+				.map((c) => c.trim())
+				.slice(1, -1)
+				.join("\n");
 
-	// test();
+			input = input
+				.split("\n")
+				.map((c) => c.trim())
+				.join("\n");
 
-	// var pbjsCls = protobuf;
+			// const arr = recording.metrics.total_output_change[input];
+			if (recording.metrics.total_output_change[input])
+				recording.metrics.total_output_change[input].add(text);
+			else recording.metrics.total_output_change[input] = new Set().add(text);
+		},
+		save: (_, time) => {
+			recordFrequency(time);
+		},
+		submit: (_, time) => {
+			recordFrequency(time);
+		},
+		execute: (_, time) => {
+			recording.metrics.total_execute++;
+			recordFrequency(time);
+		},
+	}
 
-	// let AwesomeMessages = new Type("AwesomeMessage").add(new Field("awesomeField", 1, "string"));
+	const recordChange = ({ start, end }) => {
+		for (let i = start.row; i <= end.row; i++) {
+			recording.metrics.freq_changes[i] =
+				++recording.metrics.freq_changes[i] || 1;
+		}
+	};
 
-	// let root = new Root().define("awesomepackage").add(AwesomeMessages);
+	const recordFrequency = (time) => {
+		const min = Math.ceil(time / 1000 / metricConfig.freqRange).toFixed(0);
+		recording.metrics.freq_actions[min] =
+			++recording.metrics.freq_actions[min] || 1;
+	};
 
-	// let AwesomeMessage = root.lookupType("awesomepackage.AwesomeMessage");
-	// let payload = { awesomeField: "AwesomeString" };
-	// let message = AwesomeMessage.create(payload);
+	const recordFrequencyNav = (time) => {
+		const min = Math.ceil(time / 1000 / metricConfig.freqNavRange).toFixed(0);
+		recording.metrics.freq_nav_change[min] =
+			++recording.metrics.freq_nav_change[min] || 1;
+	};
 
-	// let buffer = AwesomeMessage.encode(message).finish();
+	// window sliding density checker
+	const detectDebuggingFreqChange = (
+		freqChanges,
+		windowSize = 3,
+		thresholdMultiplier = 1.5
+	) => {
+		freqChanges = freqChanges.map((c) => (c ? c : 0));
+		const mean = freqChanges.reduce((a, b) => a + b, 0) / freqChanges.length;
+		const threshold = mean * thresholdMultiplier;
+		const clusters = [];
 
-	// let blob = new Blob([buffer], {type: "application/octet-stream"});
-	// console.log(buffer);
-	// console.log(blob);
+		for (let i = 0; i <= freqChanges.length - windowSize; i++) {
+			const window = freqChanges.slice(i, i + windowSize);
+			const avgInWindow = window.reduce((a, b) => a + b, 0) / windowSize;
+			if (avgInWindow > threshold) {
+				clusters.push({
+					startRow: i,
+					endRow: i + windowSize - 1,
+					avg: avgInWindow,
+				});
+			}
+		}
 
-	// let output = AwesomeMessage.decode(buffer);
+		return {
+			mean,
+			threshold,
+			clusters,
+			isDebugging: clusters.length > 0,
+		};
+	};
 
-	// console.log(output);
+	const detectDebuggingInputExec = (
+		total_input_changes,
+		total_executions,
+		threshold
+	) => {
+		return total_input_changes >= threshold && total_executions >= threshold;
+	};
+
+	const detectDebuggingByOutputChanges = (outputChanges, threshold = 3) => {
+		return Object.values(outputChanges).some((count) => count > threshold);
+	};
+
+	// check detect pauses
+	const detectPauses = (freq = [], threshold = 5, minDuration = 2) => {
+		const pauses = [];
+		const pausesIndex = [];
+		let count = 0;
+
+		for (let i = 0; i < freq.length; i++) {
+			const val = freq[i];
+
+			if (val == null || val <= threshold) {
+				count++;
+			} else {
+				if (count >= minDuration) {
+					pauses.push(count);
+					pausesIndex.push(i);
+				}
+				count = 0;
+			}
+		}
+
+		return { pauses, pausesIndex };
+	};
+
+	const detectCheatingFromPauses = (pauses = [], lowPause = 1) => {
+		const sum = pauses.reduce((a, b) => a + b, 0);
+		const avg = sum / pauses.length;
+		const max = Math.max(...pauses);
+		const lowPauses = pauses.filter((p) => p <= lowPause).length;
+		const lowPauseRatio = lowPauses / pauses.length;
+
+		return {
+			avg,
+			max,
+			lowPauseRatio,
+		};
+	};
+
+	// check freq nav
+	const detectCheatingNavChange = (freqNavChange, threshold = 5) => {
+		const navChanges = Object.values(freqNavChange);
+		return {
+			total: navChanges.reduce((a, b) => a + b, 0),
+			isTooMany: navChanges.some((count) => count >= threshold),
+		};
+	};
+
+	const calcMetrics = (metrics = recording.metrics) => {
+		return {
+			cct: {
+				score: (metrics.inserted + metrics.removed) / editor.getValue().length,
+			},
+			pauses: detectCheatingFromPauses(
+				detectPauses(
+					metrics.freq_actions.map((c) => (c ? c : 0)),
+					metricConfig.thresholdPause,
+					metricConfig.minDurationPause
+				).pauses,
+				metricConfig.minDurationPause
+			),
+			debugging: {
+				changes: detectDebuggingFreqChange(
+					metrics.freq_changes,
+					metricConfig.windowSize,
+					metricConfig.thresholdMult
+				).isDebugging,
+				InputExec: detectDebuggingInputExec(
+					metrics.total_input_change,
+					metrics.total_execute,
+					metricConfig.thresholdInputExec
+				),
+				Output: detectDebuggingByOutputChanges(
+					Object.fromEntries(
+						Object.entries(metrics.total_output_change).map(([key, value]) => [
+							key,
+							Array.from(value).length,
+						])
+					),
+					metricConfig.thresholdOutputChange
+				),
+			},
+			navigation: detectCheatingNavChange(
+				metrics.freq_nav_change,
+				metricConfig.thresholdNavChange
+			),
+			copyPaste: {
+				copyPasteFromOtherSource:
+					metrics.max_inserted - metrics.max_removed >=
+					metricConfig.thresholdBetweenInsertAndRemove,
+				LargeInsert: metrics.max_inserted >= metricConfig.thresholdInsert,
+				LargeRemove: metrics.max_removed >= metricConfig.thresholdRemove,
+			},
+		};
+	};
 });
