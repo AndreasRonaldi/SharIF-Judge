@@ -92,33 +92,6 @@ class Recording extends CI_Controller
 		$this->twig->display('pages/recording.twig', $data);
 	}
 
-	// Needed for protobuf, not necessary
-	public function proto($file = "test.proto")
-	{
-		$this->load->helper('file');
-		$this->load->helper('url');
-		// var_dump(base_url());
-
-		$filepath = "./assets/proto/$file";
-
-		// var_dump($filepath);
-
-		// var_dump($this->settings_model->get_setting('assignments_root'));
-
-		if (!file_exists($filepath)) {
-			throw new Exception("File $filepath does not exist");
-		}
-		if (!is_readable($filepath)) {
-			throw new Exception("File $filepath is not readable");
-		}
-
-		$file = glob($filepath);
-		$content = file_get_contents($file[0]);
-		header('Content-Type: application/protobuf');
-		header('Content-Disposition: attachment; filename="test.proto"');
-		die($content);
-	}
-
 	public function download_record($assignment_id, $problem_id, $username, $rec_id)
 	{
 		$assignment_root = rtrim($this->settings_model->get_setting('assignments_root'), '/');
@@ -148,28 +121,36 @@ class Recording extends CI_Controller
 		// echo $rec_path;
 	}
 
-	public function reinstall_db()
+	public function install_db_recording()
 	{
 		$DATETIME = 'DATETIME';
 		if ($this->db->dbdriver === 'postgre')
 			$DATETIME = 'TIMESTAMP';
 
 		$this->load->dbforge();
-
 		$this->dbforge->drop_table('recording', TRUE);
 
 		$fields = array(
-			// 'id'			=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
-			'rec_id' 	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
-
+			'rec_id' 		=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
 			'upload_at'		=> array('type' => $DATETIME),
-			// 'timestart' 	=> array('type' => $DATETIME),
-			// 'timeend' 		=> array('type' => $DATETIME),
-			// 'file_name' 	=> array('type' => 'VARCHAR', 'constraint' => 100),
-
 			'assignment' 	=> array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
 			'problem'       => array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
 			'username'      => array('type' => 'VARCHAR', 'constraint' => 20),
+
+			// metrics
+			'cct'			=> array('type' => 'FLOAT'),
+			'pause_avg' => array('type' => 'FLOAT'),
+			'pause_max' => array('type' => 'INT', 'constraint' => 11),
+
+			// for score
+			'pause_ratio' => array('type' => 'FLOAT'),
+			'debug_changes' => array('type' => 'TINYINT', 'constraint' => 1),
+			'debug_input_exec' => array('type' => 'TINYINT', 'constraint' => 1),
+			'debug_output' => array('type' => 'TINYINT', 'constraint' => 1),
+			'nav_excessive' => array('type' => 'TINYINT', 'constraint' => 1),
+			'cp_other_source' => array('type' => 'TINYINT', 'constraint' => 1),
+			'cp_large_insert' => array('type' => 'TINYINT', 'constraint' => 1),
+			'cp_large_remove' => array('type' => 'TINYINT', 'constraint' => 1),
 		);
 		$this->dbforge->add_field($fields);
 		if (! $this->dbforge->create_table('recording', TRUE))
@@ -177,7 +158,7 @@ class Recording extends CI_Controller
 		// ADD Unique constraint
 		$this->db->query(
 			"ALTER TABLE {$this->db->dbprefix('recording')}
-			 ADD CONSTRAINT {$this->db->dbprefix('sruap_unique')} UNIQUE (rec_id, username, assignment, problem);"
+			 ADD CONSTRAINT {$this->db->dbprefix('ruap_unique')} UNIQUE (rec_id, username, assignment, problem);"
 		);
 
 		echo "done ".shj_now_str();

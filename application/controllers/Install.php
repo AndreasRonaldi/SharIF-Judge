@@ -89,17 +89,26 @@ class Install extends CI_Controller
 				
 			// create table 'recording'
 			$fields = array(
-				// 'id'			=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
-				'rec_id' 	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
-	
+				'rec_id' 		=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
 				'upload_at'		=> array('type' => $DATETIME),
-				// 'timestart' 	=> array('type' => $DATETIME),
-				// 'timeend' 		=> array('type' => $DATETIME),
-				// 'file_name' 	=> array('type' => 'VARCHAR', 'constraint' => 100),
-	
 				'assignment' 	=> array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
 				'problem'       => array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
 				'username'      => array('type' => 'VARCHAR', 'constraint' => 20),
+
+				// metrics
+				'cct'			=> array('type' => 'FLOAT'),
+				'pause_avg' => array('type' => 'FLOAT'),
+				'pause_max' => array('type' => 'INT', 'constraint' => 11),
+
+				// for score
+				'pause_ratio' => array('type' => 'FLOAT'),
+				'debug_changes' => array('type' => 'TINYINT', 'constraint' => 1),
+				'debug_input_exec' => array('type' => 'TINYINT', 'constraint' => 1),
+				'debug_output' => array('type' => 'TINYINT', 'constraint' => 1),
+				'nav_excessive' => array('type' => 'TINYINT', 'constraint' => 1),
+				'cp_other_source' => array('type' => 'TINYINT', 'constraint' => 1),
+				'cp_large_insert' => array('type' => 'TINYINT', 'constraint' => 1),
+				'cp_large_remove' => array('type' => 'TINYINT', 'constraint' => 1),
 			);
 			$this->dbforge->add_field($fields);
 			if (! $this->dbforge->create_table('recording', TRUE))
@@ -107,8 +116,8 @@ class Install extends CI_Controller
 			// ADD Unique constraint
 			$this->db->query(
 				"ALTER TABLE {$this->db->dbprefix('recording')}
-				 ADD CONSTRAINT {$this->db->dbprefix('sruap_unique')} UNIQUE (rec_id, username, assignment, problem);"
-			);
+				ADD CONSTRAINT {$this->db->dbprefix('ruap_unique')} UNIQUE (rec_id, username, assignment, problem);"
+			);	
 		
 			// create table 'assignments'
 			$fields = array(

@@ -322,10 +322,10 @@ class Submit extends CI_Controller
 		$problem_id = $_POST['problem_id'];
 		$language = $_POST['language'];
 		$rec = $_POST['rec_data'];
-		// $rec_start = $_POST['rec_start'];
-		// $rec_end = $_POST['rec_end'];
-		// $buffer = $_FILES['buffer'];
+		$rec_metrics = $_POST['rec_metrics'];
 		
+		// var_dump($rec_metrics);
+
 		$user_dir = rtrim($this->assignment_root, '/').'/assignment_'.$this->user->selected_assignment['id'].'/p'.$problem_id.'/'.$this->user->username;
 		if (!file_exists($user_dir)){
 			mkdir($user_dir, 0700);
@@ -341,21 +341,6 @@ class Submit extends CI_Controller
 			echo $response;
 		}
 		else{
-
-			// $config['upload_path'] = $user_dir;
-			// $config['allowed_types'] = '*';
-			// $config['max_size']	= 0;
-			// $config['file_name'] = 'rec.bin';
-			// // $config['max_file_name'] = 20;
-			// $config['remove_spaces'] = TRUE;
-			// $this->upload->initialize($config);
-
-			// if ($this->upload->do_upload('buffer'))
-			// {
-			// 	$result = $this->upload->data();
-			// 	var_dump($result);
-			// }
-
 			$response = json_encode(array('status'=>TRUE, 'message'=>'Saved'));
 
 			$this->load->model('recording_model');
@@ -365,8 +350,19 @@ class Submit extends CI_Controller
 				'assignment' 	=> $this->user->selected_assignment['id'],
 				'problem' 		=> $problem_id,
 				'upload_at'		=> shj_now_str(),
-				// 'timestart' 	=> $rec['timestart'], // Y-m-d H:i:s
-				// 'timeend' 		=> $rec['timeend'], // Y-m-d H:i:s
+
+				'cct'				=> $rec_metrics['cct']['score'],
+				'pause_avg'			=> $rec_metrics['pauses']['avg'],
+				'pause_max'			=> $rec_metrics['pauses']['max'],
+
+				'pause_ratio' 		=> $rec_metrics['pauses']['lowPauseRatio'],
+				'debug_changes' 	=> $rec_metrics['debugging']['changes'],
+				'debug_input_exec' 	=> $rec_metrics['debugging']['inputExec'],
+				'debug_output' 		=> $rec_metrics['debugging']['output'],
+				'nav_excessive' 	=> $rec_metrics['navigation']['isTooMany'],
+				'cp_other_source' 	=> $rec_metrics['copyPaste']['copyPasteFromOtherSource'],
+				'cp_large_insert' 	=> $rec_metrics['copyPaste']['largeInsert'],
+				'cp_large_remove' 	=> $rec_metrics['copyPaste']['largeRemove'],
 			));
 
 			if($type === FALSE){ // If only saved
@@ -396,7 +392,7 @@ class Submit extends CI_Controller
 				}
 				else{
 					if($type === 'submit'){
-						$this->_submit($data, $problem_id, $language, $user_dir, $rec);
+						$this->_submit($data, $problem_id, $language, $user_dir, $rec, $rec_metrics);
 					}
 					else if($type === 'execute'){
 						$editor_input =  $_POST['editor_input'];
@@ -421,7 +417,7 @@ class Submit extends CI_Controller
 	/**
 	 * Add code to queue for judging
 	 */
-	private function _submit($data, $problem_id, $language, $user_dir){
+	private function _submit($data, $problem_id, $language, $user_dir, $rec_metrics = []){
 		$file_type = $this->_language_to_type(strtolower(trim($language)));
 		$file_ext = $this->_language_to_ext(strtolower(trim($language)));
 		$file_name = EDITOR_FILE_NAME;
@@ -467,6 +463,19 @@ class Submit extends CI_Controller
 				'assignment' 	=> $submit_info['assignment'],
 				'problem' 		=> $submit_info['problem'],
 				'upload_at'		=> shj_now_str(),
+
+				'cct'				=> $rec_metrics['cct']['score'],
+				'pause_avg'			=> $rec_metrics['pauses']['avg'],
+				'pause_max'			=> $rec_metrics['pauses']['max'],
+
+				'pause_ratio' 		=> $rec_metrics['pauses']['lowPauseRatio'],
+				'debug_changes' 	=> $rec_metrics['debugging']['changes'],
+				'debug_input_exec' 	=> $rec_metrics['debugging']['inputExec'],
+				'debug_output' 		=> $rec_metrics['debugging']['output'],
+				'nav_excessive' 	=> $rec_metrics['navigation']['isTooMany'],
+				'cp_other_source' 	=> $rec_metrics['copyPaste']['copyPasteFromOtherSource'],
+				'cp_large_insert' 	=> $rec_metrics['copyPaste']['largeInsert'],
+				'cp_large_remove' 	=> $rec_metrics['copyPaste']['largeRemove'],
 			));
 			$this->recording_model->remove_saveonly_recording($submit_info['assignment'], $submit_info['problem'], $submit_info['username']);
 

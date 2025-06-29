@@ -890,6 +890,14 @@ $(document).ready(function () {
 	};
 
 	const detectCheatingFromPauses = (pauses = [], lowPause = 1) => {
+		if (pauses.length === 0) {
+			return {
+				avg: 0,
+				max: 0,
+				lowPauseRatio: 1,
+			}
+		}
+
 		const sum = pauses.reduce((a, b) => a + b, 0);
 		const avg = sum / pauses.length;
 		const max = Math.max(...pauses);
@@ -936,12 +944,12 @@ $(document).ready(function () {
 					metricConfig.windowSize,
 					metricConfig.thresholdMult
 				).isDebugging,
-				InputExec: detectDebuggingInputExec(
+				inputExec: detectDebuggingInputExec(
 					metrics.total_input_change,
 					metrics.total_execute,
 					metricConfig.thresholdInputExec
 				),
-				Output: detectDebuggingByOutputChanges(
+				output: detectDebuggingByOutputChanges(
 					Object.fromEntries(
 						Object.entries(metrics.total_output_change).map(([key, value]) => [
 							key,
@@ -959,8 +967,8 @@ $(document).ready(function () {
 				copyPasteFromOtherSource:
 					metrics.max_inserted - metrics.max_removed >=
 					metricConfig.thresholdBetweenInsertAndRemove,
-				LargeInsert: metrics.max_inserted >= metricConfig.thresholdInsert,
-				LargeRemove: metrics.max_removed >= metricConfig.thresholdRemove,
+				largeInsert: metrics.max_inserted >= metricConfig.thresholdInsert,
+				largeRemove: metrics.max_removed >= metricConfig.thresholdRemove,
 			},
 		};
 	};

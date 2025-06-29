@@ -27,6 +27,25 @@ class Recording_model extends CI_Model
 			->result_array();
 	}
 
+	public function get_recordings_metrics($assignment_id, $problem_id) {
+		$arr['assignment'] = $assignment_id;
+		$arr['problem'] = $problem_id;
+
+		$this->db->select([
+            'assignment',
+            'problem',
+            'AVG(cct) as avg_cct',
+            'AVG(pause_avg) as avg_pause_avg',
+            'MAX(pause_max) as max_pause_max',
+        ]);
+
+		return $this->db
+			->get_where('recording', $arr)
+			->group_by(['assignment', 'problem'])
+			->order_by('upload_at asc')
+			->result_array();
+	}
+
 	public function get_user_recordings($assignment_id, $problem_id, $username) {
 		$arr['assignment'] = $assignment_id;
 		$arr['problem'] = $problem_id;
