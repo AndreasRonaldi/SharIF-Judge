@@ -17,8 +17,8 @@
 	<link rel="stylesheet" type='text/css' href="{{ base_url('assets/styles/recording.css') }}"/>
 
 	<script>
-		var test = `{{ all_problems | json_encode(constant('JSON_PRETTY_PRINT')) }}`;
-		console.log(test)
+		var test = `{{ recordings | json_encode(constant('JSON_PRETTY_PRINT')) }}`;
+		console.log(test.replace("&quot;", '"'));
 	</script>
 {% endblock %}
 
@@ -50,6 +50,7 @@
 					<th>Username</th>
 					<th>Name</th>
 					<th>Problem</th>
+					<th>Cheating</th>
 					<th>Submit Time</th>
 					<th>Actions</th>
 				</tr>
@@ -60,6 +61,17 @@
 					<td> <a dir="auto" href="{{ site_url('recording/all/user/'~recording.username~(filter_problem?'/problem/'~filter_problem)) }}">{{ recording.username }}</a> </td>
 					<td> {{ recording.name }} </td>
 					<td> <a a dir="auto" href="{{ site_url('recording/all'~(filter_user?'/user/'~filter_user)~'/problem/'~recording.problem) }}">{{ recording.problem }} </a> </td>
+					<td style="color: 
+						{% if recording.score < 30 %}
+							#006400 {# Dark Green #}
+						{% elseif recording.score < 70 %}
+							#FF8C00 {# Dark Orange #}
+						{% else %}
+							#8B0000 {# Dark Red #}
+						{% endif %}
+					">
+						{{recording.score}} %
+					</td>
 					<td> {{ recording.upload_at }} </td>
 					{# Action #}
 					<td> 

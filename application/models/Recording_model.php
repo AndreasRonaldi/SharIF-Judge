@@ -27,9 +27,10 @@ class Recording_model extends CI_Model
 			->result_array();
 	}
 
-	public function get_recordings_metrics($assignment_id, $problem_id) {
+	public function get_recordings_metrics($assignment_id, $filter_problem = NULL) {
 		$arr['assignment'] = $assignment_id;
-		$arr['problem'] = $problem_id;
+		if ($filter_problem !== NULL) 
+			$arr['problem'] = $filter_problem;
 
 		$this->db->select([
             'assignment',
@@ -39,11 +40,15 @@ class Recording_model extends CI_Model
             'MAX(pause_max) as max_pause_max',
         ]);
 
-		return $this->db
-			->get_where('recording', $arr)
-			->group_by(['assignment', 'problem'])
+		if ($filter_problem === NULL) 
+    	    $this->db->group_by(['assignment', 'problem']);
+
+		$data = $this->db
 			->order_by('upload_at asc')
+			->get_where('recording', $arr)
 			->result_array();
+	
+		return $data;
 	}
 
 	public function get_user_recordings($assignment_id, $problem_id, $username) {

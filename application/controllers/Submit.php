@@ -392,7 +392,7 @@ class Submit extends CI_Controller
 				}
 				else{
 					if($type === 'submit'){
-						$this->_submit($data, $problem_id, $language, $user_dir, $rec, $rec_metrics);
+						$this->_submit($data, $problem_id, $language, $user_dir, $rec_metrics);
 					}
 					else if($type === 'execute'){
 						$editor_input =  $_POST['editor_input'];

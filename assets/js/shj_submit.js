@@ -125,8 +125,6 @@ $(document).ready(function () {
 		disableEditor(true);
 		handlers.save();
 
-		console.log(recording.getCalcMetrics());
-
 		$.ajax({
 			type: "POST",
 			url: shj.site_url + "submit/save",
@@ -288,9 +286,9 @@ $(document).ready(function () {
 			// pattern when user change the output without changing the input first -> meaning there's debugging
 			total_output_change: {}, // key -> input, value: frequency of change output with difference output?
 
-			// Using peak detection from list_of_hotspot to detect if the pause between edit is wierd? (sometime longger than other)
+			// Using density from freq_actions to detect if the pause between edit is wierd? (sometime longger than other)
 			// the score can be scored with the average for the problem
-			freq_actions: [], // frequency of change per line
+			freq_actions: [], // frequency of action per time (can be adjust)
 			// list_of_pauses: [],
 
 			// using threshold per submission how manytime user is changing navigation per hours or per submission?
@@ -329,14 +327,22 @@ $(document).ready(function () {
 			return JSON.stringify({
 				...befRecording,
 				[recording.startTime]: {
-					metrics: calcMetrics(recording.metrics),
+					metrics: recording.getCalcMetrics(),
 					events: recording.events,
 				},
 			});
 		},
 
 		getCalcMetrics: () => {
-			return calcMetrics(recording.metrics);
+			// console.log(befRecording);
+			const bef = undefined;
+			if (befRecording.length > 0)
+				bef =
+					befRecording[
+						Object.keys(befRecording)[Object.keys(befRecording).length - 1]
+					].metrics;
+
+			return calcMetrics(recording.metrics, bef);
 		},
 	};
 
@@ -723,7 +729,7 @@ $(document).ready(function () {
 		thresholdInputExec: 10,
 		thresholdOutputChange: 5,
 
-		thresholdNavChange: 5,
+		thresholdNavChange: 3,
 
 		thresholdInsert: 500,
 		thresholdRemove: 500,
@@ -895,7 +901,7 @@ $(document).ready(function () {
 				avg: 0,
 				max: 0,
 				lowPauseRatio: 1,
-			}
+			};
 		}
 
 		const sum = pauses.reduce((a, b) => a + b, 0);
@@ -920,15 +926,53 @@ $(document).ready(function () {
 		};
 	};
 
-	const calcMetrics = (metrics = recording.metrics) => {
-		const diffText = Diff.diffChars(befText, editor.getValue()).reduce((prev, cur) => {
-			if (!cur.added && !cur.removed) return prev;
-			return prev + cur.count;
-		}, 0);
+	const calcMetrics = (
+		metrics = recording.metrics,
+		before = {
+			origin: {
+				inserted: 0,
+				removed: 0,
+			},
+			debugging: {
+				changes: false,
+				inputExec: false,
+				output: false,
+			},
+			navigation: {
+				total: 0,
+				isTooMany: false,
+			},
+			copyPaste: {
+				copyPasteFromOtherSource: false,
+				largeInsert: false,
+				largeRemove: false,
+			},
+		}
+	) => {
+		const diffText = Diff.diffChars(befText, editor.getValue()).reduce(
+			(prev, cur) => {
+				if (!cur.added && !cur.removed) return prev;
+				return prev + cur.count;
+			},
+			0
+		);
+
+		const nav = detectCheatingNavChange(
+			metrics.freq_nav_change,
+			metricConfig.thresholdNavChange
+		);
 
 		return {
+			origin: metrics,
 			cct: {
-				score: (metrics.inserted + metrics.removed) / diffText,
+				score:
+					(metrics.inserted +
+						metrics.removed +
+						before.origin.inserted +
+						before.origin.removed) /
+					(before.origin.inserted > 0 || before.origin.removed > 0)
+						? editor.getValue().length
+						: diffText,
 			},
 			pauses: detectCheatingFromPauses(
 				detectPauses(
@@ -939,36 +983,46 @@ $(document).ready(function () {
 				metricConfig.minDurationPause
 			),
 			debugging: {
-				changes: detectDebuggingFreqChange(
-					metrics.freq_changes,
-					metricConfig.windowSize,
-					metricConfig.thresholdMult
-				).isDebugging,
-				inputExec: detectDebuggingInputExec(
-					metrics.total_input_change,
-					metrics.total_execute,
-					metricConfig.thresholdInputExec
-				),
-				output: detectDebuggingByOutputChanges(
-					Object.fromEntries(
-						Object.entries(metrics.total_output_change).map(([key, value]) => [
-							key,
-							Array.from(value).length,
-						])
+				changes:
+					before.debugging.changes ||
+					detectDebuggingFreqChange(
+						metrics.freq_changes,
+						metricConfig.windowSize,
+						metricConfig.thresholdMult
+					).isDebugging,
+				inputExec:
+					before.debugging.inputExec ||
+					detectDebuggingInputExec(
+						metrics.total_input_change,
+						metrics.total_execute,
+						metricConfig.thresholdInputExec
 					),
-					metricConfig.thresholdOutputChange
-				),
+				output:
+					before.debugging.output ||
+					detectDebuggingByOutputChanges(
+						Object.fromEntries(
+							Object.entries(metrics.total_output_change).map(
+								([key, value]) => [key, Array.from(value).length]
+							)
+						),
+						metricConfig.thresholdOutputChange
+					),
 			},
-			navigation: detectCheatingNavChange(
-				metrics.freq_nav_change,
-				metricConfig.thresholdNavChange
-			),
+			navigation: {
+				total: before.navigation.total + nav.total,
+				isTooMany: before.navigation.isTooMany || nav.isTooMany,
+			},
 			copyPaste: {
 				copyPasteFromOtherSource:
+					before.copyPaste.copyPasteFromOtherSource ||
 					metrics.max_inserted - metrics.max_removed >=
-					metricConfig.thresholdBetweenInsertAndRemove,
-				largeInsert: metrics.max_inserted >= metricConfig.thresholdInsert,
-				largeRemove: metrics.max_removed >= metricConfig.thresholdRemove,
+						metricConfig.thresholdBetweenInsertAndRemove,
+				largeInsert:
+					before.copyPaste.largeInsert ||
+					metrics.max_inserted >= metricConfig.thresholdInsert,
+				largeRemove:
+					before.copyPaste.largeRemove ||
+					metrics.max_removed >= metricConfig.thresholdRemove,
 			},
 		};
 	};
