@@ -323,8 +323,6 @@ class Submit extends CI_Controller
 		$language = $_POST['language'];
 		$rec = $_POST['rec_data'];
 		$rec_metrics = $_POST['rec_metrics'];
-		
-		// var_dump($rec_metrics);
 
 		$user_dir = rtrim($this->assignment_root, '/').'/assignment_'.$this->user->selected_assignment['id'].'/p'.$problem_id.'/'.$this->user->username;
 		if (!file_exists($user_dir)){
@@ -351,18 +349,20 @@ class Submit extends CI_Controller
 				'problem' 		=> $problem_id,
 				'upload_at'		=> shj_now_str(),
 
-				'cct'				=> $rec_metrics['cct']['score'],
-				'pause_avg'			=> $rec_metrics['pauses']['avg'],
-				'pause_max'			=> $rec_metrics['pauses']['max'],
-
-				'pause_ratio' 		=> $rec_metrics['pauses']['lowPauseRatio'],
-				'debug_changes' 	=> $rec_metrics['debugging']['changes'],
-				'debug_input_exec' 	=> $rec_metrics['debugging']['inputExec'],
-				'debug_output' 		=> $rec_metrics['debugging']['output'],
-				'nav_excessive' 	=> $rec_metrics['navigation']['isTooMany'],
-				'cp_other_source' 	=> $rec_metrics['copyPaste']['copyPasteFromOtherSource'],
-				'cp_large_insert' 	=> $rec_metrics['copyPaste']['largeInsert'],
-				'cp_large_remove' 	=> $rec_metrics['copyPaste']['largeRemove'],
+				'duration'		=> $rec_metrics['duration'],
+			
+				'inserted'		=> $rec_metrics['origin']['inserted'],
+				'removed'		=> $rec_metrics['origin']['removed'],
+				'cct'			=> $rec_metrics['cct']['score'],
+			
+				'total_input_change'	=> $rec_metrics['debugging']['input_change'],
+				'total_execute'			=> $rec_metrics['debugging']['execute'],
+				
+				'total_nav_in'	=> $rec_metrics['navigation']['total_in'],
+				'total_nav_out'	=> $rec_metrics['navigation']['total_out'],
+				
+				'max_inserted'	=> $rec_metrics['copyPaste']['max_inserted'],
+				'max_removed'	=> $rec_metrics['copyPaste']['max_removed'],
 			));
 
 			if($type === FALSE){ // If only saved
@@ -464,18 +464,20 @@ class Submit extends CI_Controller
 				'problem' 		=> $submit_info['problem'],
 				'upload_at'		=> shj_now_str(),
 
-				'cct'				=> $rec_metrics['cct']['score'],
-				'pause_avg'			=> $rec_metrics['pauses']['avg'],
-				'pause_max'			=> $rec_metrics['pauses']['max'],
-
-				'pause_ratio' 		=> $rec_metrics['pauses']['lowPauseRatio'],
-				'debug_changes' 	=> $rec_metrics['debugging']['changes'],
-				'debug_input_exec' 	=> $rec_metrics['debugging']['inputExec'],
-				'debug_output' 		=> $rec_metrics['debugging']['output'],
-				'nav_excessive' 	=> $rec_metrics['navigation']['isTooMany'],
-				'cp_other_source' 	=> $rec_metrics['copyPaste']['copyPasteFromOtherSource'],
-				'cp_large_insert' 	=> $rec_metrics['copyPaste']['largeInsert'],
-				'cp_large_remove' 	=> $rec_metrics['copyPaste']['largeRemove'],
+				'duration'		=> $rec_metrics['duration'],
+			
+				'inserted'		=> $rec_metrics['origin']['inserted'],
+				'removed'		=> $rec_metrics['origin']['removed'],
+				'cct'			=> $rec_metrics['cct']['score'],
+			
+				'total_input_change'	=> $rec_metrics['debugging']['input_change'],
+				'total_execute'			=> $rec_metrics['debugging']['execute'],
+				
+				'total_nav_in'	=> $rec_metrics['navigation']['total_in'],
+				'total_nav_out'	=> $rec_metrics['navigation']['total_out'],
+				
+				'max_inserted'	=> $rec_metrics['copyPaste']['max_inserted'],
+				'max_removed'	=> $rec_metrics['copyPaste']['max_removed'],
 			));
 			$this->recording_model->remove_saveonly_recording($submit_info['assignment'], $submit_info['problem'], $submit_info['username']);
 

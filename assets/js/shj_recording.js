@@ -204,60 +204,59 @@ $(document).ready(() => {
 
 	const colorInChart = {
 		insert: {
-			bg: "#00C853",
-			border: "#008E3C",
+			// hijau
+			bg: "#4CAF50", // warna hijau terang
+			border: "#2E7D32", // hijau tua
 		},
 		remove: {
-			bg: "#FF3D00",
-			border: "#DD2C00",
-		},
-		cursor_selection: {
-			bg: "#2962FF",
-			border: "#0039CB",
-		},
-		sel_selection: {
-			bg: "#6200EA",
-			border: "#4500B5",
+			// merah
+			bg: "#F44336", // merah terang
+			border: "#B71C1C", // merah tua
 		},
 		focus: {
-			bg: "#FFAB00",
-			border: "#FF8F00",
+			// biru terang
+			bg: "#42A5F5", // biru terang
+			border: "#1976D2", // biru sedang/tua
 		},
 		blur: {
-			bg: "#757575",
-			border: "#424242",
-		},
-		visibility: {
-			bg: "#AA00FF",
-			border: "#7B1FA2",
+			// biru gelap
+			bg: "#1E88E5", // biru lebih gelap
+			border: "#0D47A1", // biru navy
 		},
 		pdf_focus: {
-			bg: "#FF6D00",
-			border: "#E65100",
+			// kuning terang
+			bg: "#FFEB3B", // kuning terang
+			border: "#FBC02D", // kuning agak tua
 		},
 		pdf_blur: {
-			bg: "#9E9E9E",
-			border: "#616161",
+			// kuning gelap
+			bg: "#F9A825", // kuning gelap
+			border: "#F57F17", // oranye kekuningan gelap
 		},
 		input_change: {
-			bg: "#00B8D4",
-			border: "#0088A3",
+			// ungu terang
+			bg: "#BA68C8", // ungu terang
+			border: "#8E24AA", // ungu sedang/tua
 		},
 		output_change: {
-			bg: "#FF4081",
-			border: "#D81B60",
+			// ungu gelap
+			bg: "#7B1FA2", // ungu gelap
+			border: "#4A148C", // ungu sangat tua
 		},
 		save: {
-			bg: "#64DD17",
-			border: "#3E9C00",
+			// hitam
+			bg: "#212121", // abu-abu sangat gelap (hampir hitam)
+			border: "#000000", // hitam
 		},
 		submit: {
-			bg: "#304FFE",
-			border: "#1A237E",
+			// putih
+			bg: "#FFFFFF", // putih
+			border: "#B0BEC5", // abu-abu kebiruan terang (kontras putih)
 		},
 		execute: {
-			bg: "#D50000",
-			border: "#9B0000",
+			// abu-abu
+			bg: "#BDBDBD", // abu-abu terang
+			border: "#616161", // abu-abu gelap
 		},
 	};
 
@@ -278,8 +277,14 @@ $(document).ready(() => {
 			cache: false,
 			success: (data) => {
 				recording.origin = data;
+
+				recording.events = Object.fromEntries(
+					Object.entries(data).map(([key, value]) => {
+						if (Array.isArray(value)) return [key, value];
+						return [key, value.events];
+					})
+				);
 				
-				recording.events = Object.fromEntries(Object.entries(data).map(([key, value]) => [key, value.events]));
 				data = recording.events;
 
 				$("select#rec_selection").empty();

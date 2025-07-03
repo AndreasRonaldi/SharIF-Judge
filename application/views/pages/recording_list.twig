@@ -50,7 +50,12 @@
 					<th>Username</th>
 					<th>Name</th>
 					<th>Problem</th>
-					<th>Cheating</th>
+					<th>Insert (max)</th>
+					<th>Remove (max)</th>
+					<th>Code Churn Rate</th>
+					<th>Total Focus</th>
+					<th>Total Execute</th>
+					<th>Duration</th>
 					<th>Submit Time</th>
 					<th>Actions</th>
 				</tr>
@@ -61,17 +66,12 @@
 					<td> <a dir="auto" href="{{ site_url('recording/all/user/'~recording.username~(filter_problem?'/problem/'~filter_problem)) }}">{{ recording.username }}</a> </td>
 					<td> {{ recording.name }} </td>
 					<td> <a a dir="auto" href="{{ site_url('recording/all'~(filter_user?'/user/'~filter_user)~'/problem/'~recording.problem) }}">{{ recording.problem }} </a> </td>
-					<td style="color: 
-						{% if recording.score < 30 %}
-							#006400 {# Dark Green #}
-						{% elseif recording.score < 70 %}
-							#FF8C00 {# Dark Orange #}
-						{% else %}
-							#8B0000 {# Dark Red #}
-						{% endif %}
-					">
-						{{recording.score}} %
-					</td>
+					<td> {{ recording.inserted }} ({{ recording.max_inserted }}) </td>
+					<td> {{ recording.removed }} ({{ recording.max_removed }}) </td>
+					<td> {{ recording.cct }} </td>
+					<td> in: {{ recording.total_nav_in }}, out: {{ recording.total_nav_out }}  </td>
+					<td> {{ recording.total_execute }} </td>
+					<td> {{ recording.time }} </td>
 					<td> {{ recording.upload_at }} </td>
 					{# Action #}
 					<td> 
@@ -80,11 +80,6 @@
 				</tr>
 			{% endfor %}
 		</table>
-
-
-		{% if username != NULL %}
-		Please used /see_recording/... .
-		{% endif %}
 	{% endif %}
 {% endblock %}
 {# main_content #}

@@ -267,35 +267,14 @@ $(document).ready(function () {
 	const recording = {
 		events: [],
 		startTime: -1,
+		endTime: -1,
 		metrics: {
-			// Jadi code churn rate or cct = (inserted + removed) / total_char_submit_code
-			// for every recording, find the latest submission (if exists)
-			// and get the char diff using jsdiff, to get total_char_submit_code
-			// cct can be scored with the average for the problem
 			inserted: 0, // total char inserted
 			removed: 0, // total char removed
-
-			// Using density to detect if there's are hot spot in the inserted/removed per lines (debugging pattern)
-			freq_changes: [], // frequency of change per line
-			// list_of_hotspot: [], // at line x where the spike are
-
-			// total_input_change and total_execute for debugging pattern
 			total_input_change: 0,
 			total_execute: 0,
-
-			// pattern when user change the output without changing the input first -> meaning there's debugging
-			total_output_change: {}, // key -> input, value: frequency of change output with difference output?
-
-			// Using density from freq_actions to detect if the pause between edit is wierd? (sometime longger than other)
-			// the score can be scored with the average for the problem
-			freq_actions: [], // frequency of action per time (can be adjust)
-			// list_of_pauses: [],
-
-			// using threshold per submission how manytime user is changing navigation per hours or per submission?
-			freq_nav_change: {}, // key -> hours, value: frequency of change
-
-			// the biggest total char inserted and removed in code
-			// to get copy-paste pattern
+			total_nav_in: 0,
+			total_nav_out: 0,
 			max_inserted: -1,
 			max_removed: -1,
 		},
@@ -310,14 +289,10 @@ $(document).ready(function () {
 			recording.metrics = {
 				inserted: 0,
 				removed: 0,
-				freq_changes: [],
-				// list_of_hotspot: [],
 				total_input_change: 0,
 				total_execute: 0,
-				total_output_change: {},
-				freq_actions: [],
-				// list_of_pauses: [],
-				freq_nav_change: {},
+				total_nav_in: 0,
+				total_nav_out: 0,
 				max_inserted: -1,
 				max_removed: -1,
 			};
@@ -342,7 +317,7 @@ $(document).ready(function () {
 						Object.keys(befRecording)[Object.keys(befRecording).length - 1]
 					].metrics;
 
-			return calcMetrics(recording.metrics, bef);
+			return calcMetrics(recording.metrics, bef, recording);
 		},
 	};
 
@@ -716,26 +691,6 @@ $(document).ready(function () {
 
 	// + REVISI CODE
 
-	const metricConfig = {
-		freqRange: 5, // for freq_pause in seconds
-		freqNavRange: 10, // for freq_change_nav
-
-		thresholdPause: 5, // pause -> (n action <= threshold)
-		minDurationPause: 2, // how many freqRange minimal for a pause to occured
-
-		windowSize: 3,
-		thresholdMult: 1.5,
-
-		thresholdInputExec: 10,
-		thresholdOutputChange: 5,
-
-		thresholdNavChange: 3,
-
-		thresholdInsert: 500,
-		thresholdRemove: 500,
-		thresholdBetweenInsertAndRemove: 50,
-	};
-
 	// handlers for metrics only
 	const metricHandlers = {
 		insert: (e, time) => {
@@ -746,9 +701,6 @@ $(document).ready(function () {
 				total,
 				recording.metrics.max_inserted
 			);
-
-			recordChange(e);
-			recordFrequency(time);
 		},
 		remove: (e, time) => {
 			const total = e.data.join("\n").length;
@@ -757,173 +709,38 @@ $(document).ready(function () {
 				total,
 				recording.metrics.max_removed
 			);
-
-			recordChange(e);
-			recordFrequency(time);
 		},
-		editor_cursor: (selection, time) => {
-			recordFrequency(time);
-		},
-		editor_selection: (selection, time) => {
-			recordFrequency(time);
-		},
+		editor_cursor: (selection, time) => {},
+		editor_selection: (selection, time) => {},
 		focus: (_, time) => {
-			recordFrequencyNav(time);
+			recording.metrics.total_nav_in++;
 		},
-		blur: (_, time) => {},
-		visibility: (isVisible, time) => {},
-		pdf_focus: (_, time) => {},
+		blur: (_, time) => {
+			recording.metrics.total_nav_out++;
+		},
+		visibility: (isVisible, time) => {
+			if (isVisible) recording.metrics.total_nav_in++;
+			else recording.metrics.total_nav_out++;
+		},
+		pdf_focus: (_, time) => {
+			recording.metrics.total_nav_in--;
+			recording.metrics.total_nav_out--;
+		},
 		pdf_blur: (_, time) => {},
 		input_change: (value, time) => {
 			recording.metrics.total_input_change++;
-			recordFrequency(time);
 		},
-		output_change: ({ value, input }, time) => {
-			if (!value.includes("Total Execution Time")) return;
-
-			let text = value
-				.split("\n")
-				.filter((c) => c)
-				.map((c) => c.trim())
-				.slice(1, -1)
-				.join("\n");
-
-			input = input
-				.split("\n")
-				.map((c) => c.trim())
-				.join("\n");
-
-			// const arr = recording.metrics.total_output_change[input];
-			if (recording.metrics.total_output_change[input])
-				recording.metrics.total_output_change[input].add(text);
-			else recording.metrics.total_output_change[input] = new Set().add(text);
-		},
+		output_change: ({ value, input }, time) => {},
 		save: (_, time) => {
-			recordFrequency(time);
+			recording.endTime = time;
 		},
 		submit: (_, time) => {
-			recordFrequency(time);
+			recording.endTime = time;
 		},
 		execute: (_, time) => {
 			recording.metrics.total_execute++;
-			recordFrequency(time);
+			recording.endTime = time;
 		},
-	};
-
-	const recordChange = ({ start, end }) => {
-		for (let i = start.row; i <= end.row; i++) {
-			recording.metrics.freq_changes[i] =
-				++recording.metrics.freq_changes[i] || 1;
-		}
-	};
-
-	const recordFrequency = (time) => {
-		const min = Math.ceil(time / 1000 / metricConfig.freqRange).toFixed(0);
-		recording.metrics.freq_actions[min] =
-			++recording.metrics.freq_actions[min] || 1;
-	};
-
-	const recordFrequencyNav = (time) => {
-		const min = Math.ceil(time / 1000 / metricConfig.freqNavRange).toFixed(0);
-		recording.metrics.freq_nav_change[min] =
-			++recording.metrics.freq_nav_change[min] || 1;
-	};
-
-	// window sliding density checker
-	const detectDebuggingFreqChange = (
-		freqChanges,
-		windowSize = 3,
-		thresholdMultiplier = 1.5
-	) => {
-		freqChanges = freqChanges.map((c) => (c ? c : 0));
-		const mean = freqChanges.reduce((a, b) => a + b, 0) / freqChanges.length;
-		const threshold = mean * thresholdMultiplier;
-		const clusters = [];
-
-		for (let i = 0; i <= freqChanges.length - windowSize; i++) {
-			const window = freqChanges.slice(i, i + windowSize);
-			const avgInWindow = window.reduce((a, b) => a + b, 0) / windowSize;
-			if (avgInWindow > threshold) {
-				clusters.push({
-					startRow: i,
-					endRow: i + windowSize - 1,
-					avg: avgInWindow,
-				});
-			}
-		}
-
-		return {
-			mean,
-			threshold,
-			clusters,
-			isDebugging: clusters.length > 0,
-		};
-	};
-
-	const detectDebuggingInputExec = (
-		total_input_changes,
-		total_executions,
-		threshold
-	) => {
-		return total_input_changes >= threshold && total_executions >= threshold;
-	};
-
-	const detectDebuggingByOutputChanges = (outputChanges, threshold = 3) => {
-		return Object.values(outputChanges).some((count) => count > threshold);
-	};
-
-	// check detect pauses
-	const detectPauses = (freq = [], threshold = 5, minDuration = 2) => {
-		const pauses = [];
-		const pausesIndex = [];
-		let count = 0;
-
-		for (let i = 0; i < freq.length; i++) {
-			const val = freq[i];
-
-			if (val == null || val <= threshold) {
-				count++;
-			} else {
-				if (count >= minDuration) {
-					pauses.push(count);
-					pausesIndex.push(i);
-				}
-				count = 0;
-			}
-		}
-
-		return { pauses, pausesIndex };
-	};
-
-	const detectCheatingFromPauses = (pauses = [], lowPause = 1) => {
-		if (pauses.length === 0) {
-			return {
-				avg: 0,
-				max: 0,
-				lowPauseRatio: 1,
-			};
-		}
-
-		const sum = pauses.reduce((a, b) => a + b, 0);
-		const avg = sum / pauses.length;
-		const max = Math.max(...pauses);
-		const lowPauses = pauses.filter((p) => p <= lowPause).length;
-		const lowPauseRatio = lowPauses / pauses.length;
-
-		return {
-			avg,
-			max,
-			lowPauseRatio,
-		};
-	};
-
-	// check freq nav
-	const detectCheatingNavChange = (freqNavChange, threshold = 5) => {
-		const navChanges = Object.values(freqNavChange);
-		return {
-			total: navChanges.reduce((a, b) => a + b, 0),
-			isTooMany: navChanges.some((count) => count >= threshold),
-		};
 	};
 
 	const calcMetrics = (
@@ -934,20 +751,20 @@ $(document).ready(function () {
 				removed: 0,
 			},
 			debugging: {
-				changes: false,
-				inputExec: false,
-				output: false,
+				input_change: 0,
+				execute: 0,
 			},
 			navigation: {
-				total: 0,
-				isTooMany: false,
+				total_in: 0,
+				total_out: 0,
 			},
 			copyPaste: {
-				copyPasteFromOtherSource: false,
-				largeInsert: false,
-				largeRemove: false,
+				max_inserted: 0,
+				max_removed: 0,
 			},
-		}
+			duration: 0,
+		},
+		rec = recording
 	) => {
 		const diffText = Diff.diffChars(befText, editor.getValue()).reduce(
 			(prev, cur) => {
@@ -957,13 +774,13 @@ $(document).ready(function () {
 			0
 		);
 
-		const nav = detectCheatingNavChange(
-			metrics.freq_nav_change,
-			metricConfig.thresholdNavChange
-		);
-
 		return {
 			origin: metrics,
+			duration: before.duration + rec.endTime,
+			// Jadi code churn rate or cct = (inserted + removed) / total_char_submit_code
+			// for every recording, find the latest submission (if exists)
+			// and get the char diff using jsdiff, to get total_char_submit_code
+			// cct can be scored with the average for the problem
 			cct: {
 				score:
 					(metrics.inserted +
@@ -974,55 +791,17 @@ $(document).ready(function () {
 						? editor.getValue().length
 						: diffText,
 			},
-			pauses: detectCheatingFromPauses(
-				detectPauses(
-					metrics.freq_actions.map((c) => (c ? c : 0)),
-					metricConfig.thresholdPause,
-					metricConfig.minDurationPause
-				).pauses,
-				metricConfig.minDurationPause
-			),
 			debugging: {
-				changes:
-					before.debugging.changes ||
-					detectDebuggingFreqChange(
-						metrics.freq_changes,
-						metricConfig.windowSize,
-						metricConfig.thresholdMult
-					).isDebugging,
-				inputExec:
-					before.debugging.inputExec ||
-					detectDebuggingInputExec(
-						metrics.total_input_change,
-						metrics.total_execute,
-						metricConfig.thresholdInputExec
-					),
-				output:
-					before.debugging.output ||
-					detectDebuggingByOutputChanges(
-						Object.fromEntries(
-							Object.entries(metrics.total_output_change).map(
-								([key, value]) => [key, Array.from(value).length]
-							)
-						),
-						metricConfig.thresholdOutputChange
-					),
+				input_change: before.debugging.input_change + metrics.total_input_change,
+				execute: before.debugging.execute + metrics.total_execute,
 			},
 			navigation: {
-				total: before.navigation.total + nav.total,
-				isTooMany: before.navigation.isTooMany || nav.isTooMany,
+				total_in: before.navigation.total_in + metrics.total_nav_in,
+				total_out: before.navigation.total_out + metrics.total_nav_out,
 			},
 			copyPaste: {
-				copyPasteFromOtherSource:
-					before.copyPaste.copyPasteFromOtherSource ||
-					metrics.max_inserted - metrics.max_removed >=
-						metricConfig.thresholdBetweenInsertAndRemove,
-				largeInsert:
-					before.copyPaste.largeInsert ||
-					metrics.max_inserted >= metricConfig.thresholdInsert,
-				largeRemove:
-					before.copyPaste.largeRemove ||
-					metrics.max_removed >= metricConfig.thresholdRemove,
+				max_inserted: Math.max(before.copyPaste.max_inserted, metrics.max_inserted),
+				max_removed: Math.max(before.copyPaste.max_removed, metrics.max_removed),
 			},
 		};
 	};

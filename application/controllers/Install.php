@@ -94,21 +94,21 @@ class Install extends CI_Controller
 				'assignment' 	=> array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
 				'problem'       => array('type' => 'SMALLINT', 'constraint' => 4, 'unsigned' => TRUE),
 				'username'      => array('type' => 'VARCHAR', 'constraint' => 20),
-
-				// metrics
+			
+				'duration'		=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+			
+				'inserted'		=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+				'removed'		=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
 				'cct'			=> array('type' => 'FLOAT'),
-				'pause_avg' => array('type' => 'FLOAT'),
-				'pause_max' => array('type' => 'INT', 'constraint' => 11),
-
-				// for score
-				'pause_ratio' => array('type' => 'FLOAT'),
-				'debug_changes' => array('type' => 'TINYINT', 'constraint' => 1),
-				'debug_input_exec' => array('type' => 'TINYINT', 'constraint' => 1),
-				'debug_output' => array('type' => 'TINYINT', 'constraint' => 1),
-				'nav_excessive' => array('type' => 'TINYINT', 'constraint' => 1),
-				'cp_other_source' => array('type' => 'TINYINT', 'constraint' => 1),
-				'cp_large_insert' => array('type' => 'TINYINT', 'constraint' => 1),
-				'cp_large_remove' => array('type' => 'TINYINT', 'constraint' => 1),
+			
+				'total_input_change'	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+				'total_execute'	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+				
+				'total_nav_in'	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+				'total_nav_out'	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+				
+				'max_inserted'	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
+				'max_removed'	=> array('type' => 'INT', 'constraint' => 11, 'unsigned' => TRUE),
 			);
 			$this->dbforge->add_field($fields);
 			if (! $this->dbforge->create_table('recording', TRUE))
