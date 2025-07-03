@@ -15,11 +15,6 @@
 
 {% block other_assets %}
 	<link rel="stylesheet" type='text/css' href="{{ base_url('assets/styles/recording.css') }}"/>
-
-	<script>
-		var test = `{{ recordings | json_encode(constant('JSON_PRETTY_PRINT')) }}`;
-		console.log(test.replace("&quot;", '"'));
-	</script>
 {% endblock %}
 
 
