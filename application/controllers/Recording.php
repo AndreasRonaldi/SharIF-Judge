@@ -53,9 +53,6 @@ class Recording extends CI_Controller
 			});
 
 			$m = reset($ms);
-
-			var_dump($m);
-			var_dump($item);
 			
 			$calc = 0;
 			
