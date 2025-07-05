@@ -381,18 +381,19 @@ $(document).ready(function () {
 				complete: shj.loading_finish,
 				error: shj.loading_error,
 				success: function (response) {
-					if (response.done)
+					const res = JSON.parse(response);
+					if (res.done)
 					{
 						var checkboxes = $(".select_assignment").children('i').addBack('i');
 						checkboxes.removeClass('fa-check-square-o color6').addClass('fa-square-o');
 						checkboxes.filter("[data-id='" + id + "']").removeClass('fa-square-o').addClass('fa-check-square-o color6');
 						$(".assignment_name").html($('.top_object [data-id="' + id + '"]').parents('.assignment_block').children('.assignment_item').html());
-						shj.finish_time = moment(response.finish_time);
-						shj.extra_time  = moment.duration(parseInt(response.extra_time, 10), 'seconds');
+						shj.finish_time = moment(res.finish_time);
+						shj.extra_time  = moment.duration(parseInt(res.extra_time, 10), 'seconds');
 						shj.update_clock();
 					}
 					else
-						shj.loading_failed(response.message);
+						shj.loading_failed(res.message);
 				}
 			});
 		}
