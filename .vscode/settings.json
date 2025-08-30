@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "*.ejs": "html",
+        "filesystem": "cpp",
+        "string": "cpp",
+        "xstring": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "vector": "cpp",
+        "xtree": "cpp",
+        "chrono": "cpp"
+    }
+}

@@ -250,6 +250,7 @@ class Queue_model extends CI_Model
 			'assignment' => $submit_info['assignment'],
 			'problem' => $submit_info['problem']
 		));
+		
 		if ($query->num_rows() == 0){
 			$submit_info['is_final'] = 0;
 			$submit_info['status'] = 'PENDING';
